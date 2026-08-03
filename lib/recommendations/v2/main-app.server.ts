@@ -134,6 +134,40 @@ function optionCopy(items: WardrobeGarment[]) {
   };
 }
 
+function sanitizedFailureTrace(trace: Awaited<ReturnType<typeof runRecommendationV2WithLazyWardrobe>>["trace"]) {
+  const rejectionReasonCounts: Record<string, number> = {};
+  for (const retrieval of trace.retrievals) {
+    for (const rejected of retrieval.rejectedItems) {
+      for (const reason of rejected.reasonCodes) {
+        rejectionReasonCounts[reason] = (rejectionReasonCounts[reason] ?? 0) + 1;
+      }
+    }
+  }
+  const hardValidationFailureCounts: Record<string, number> = {};
+  for (const candidate of trace.rejectedCandidates) {
+    for (const failure of candidate.failedChecks) {
+      hardValidationFailureCounts[failure.check] = (hardValidationFailureCounts[failure.check] ?? 0) + 1;
+    }
+  }
+  return {
+    engineVersion: trace.engineVersion,
+    outcome: trace.adjudicationOutcome,
+    postureConfidence: trace.posture.confidence,
+    criticalUnknownCount: trace.posture.criticalUnknownCount,
+    directions: trace.retrievals.map((retrieval) => ({
+      foundationConcept: retrieval.foundationConcept,
+      requiredRoles: retrieval.requiredRoles,
+      foundationCandidateCount: retrieval.foundationCandidateCount,
+      supportCandidateCounts: retrieval.supportCandidateCounts,
+    })),
+    candidateCount: trace.candidateIds.length,
+    hardValidationRejectedCount: trace.rejectedCandidates.length,
+    judgmentCount: trace.judgments.length,
+    rejectionReasonCounts,
+    hardValidationFailureCounts,
+  };
+}
+
 export async function generateMainAppV2Recommendation(input: {
   client: SupabaseClient; userId: string; eventId: string; requestContext: Record<string, unknown> | null;
 }) {
@@ -192,6 +226,7 @@ export async function generateMainAppV2Recommendation(input: {
     },
   });
   if (result.outcome.outcome !== "recommend") {
+    console.warn("V2 recommendation abstained.", sanitizedFailureTrace(result.trace));
     return { status: 422, body: { error: result.outcome.outcome === "ask-one-question" ? result.outcome.question : "Curated could not find a complete look that responsibly suits this day.", engineVersion: RECOMMENDATION_ENGINE_V2_VERSION, architectureVersion: RECOMMENDATION_ARCHITECTURE_V2_VERSION } };
   }
   const looks = [result.outcome.selected, result.outcome.challenger].filter((look): look is NonNullable<typeof look> => Boolean(look));

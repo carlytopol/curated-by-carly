@@ -40,7 +40,10 @@ export type RecommendationV2Trace = {
   directionIds: string[];
   retrievals: Array<{
     directionId: string;
+    foundationConcept: string;
+    requiredRoles: string[];
     foundationCandidateCount: number;
+    supportCandidateCounts: Record<string, number>;
     rejectedItems: Array<{ itemId: string; reasonCodes: string[] }>;
   }>;
   candidateIds: string[];
@@ -179,7 +182,12 @@ function completeRecommendationV2(
       directionIds: directions.map((item) => item.artifactId),
       retrievals: retrievals.map((item) => ({
         directionId: item.direction.artifactId,
+        foundationConcept: item.direction.foundationConcept,
+        requiredRoles: item.direction.requiredRoles,
         foundationCandidateCount: item.foundationCandidates.length,
+        supportCandidateCounts: Object.fromEntries(
+          Object.entries(item.supportCandidates).map(([role, garments]) => [role, garments?.length ?? 0]),
+        ),
         rejectedItems: item.rejectionReasons.map((rejection) => ({
           itemId: rejection.itemId,
           reasonCodes: rejection.reasonCodes,
