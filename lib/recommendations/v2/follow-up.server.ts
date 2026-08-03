@@ -14,6 +14,7 @@ import {
   requestsRecommendationRestoration,
   requestsRecommendationSuppression,
 } from "./follow-up-intent";
+import { RECOMMENDATION_ENGINE_V2_VERSION } from "./engine";
 
 const V2_OPTION_ID = /^([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}):(\d+)$/i;
 
@@ -155,7 +156,7 @@ export async function handleMainAppV2FollowUp(input: {
       pairPreferenceSaved: false,
       eventCorrectionSaved: true,
       shouldRegenerate: true,
-      engineVersion: "recommendation-engine.v2.1.0",
+      engineVersion: RECOMMENDATION_ENGINE_V2_VERSION,
       memoryRecordId: result.mutation.recordId,
     },
   };

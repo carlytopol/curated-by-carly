@@ -113,7 +113,7 @@ export function buildPersonalOutfitDirections(input: {
     ...style.preferredFoundations,
     ...memoryFoundations,
     ...posture.preferredFoundationDirections,
-  ]).slice(0, input.maximumDirections ?? 3);
+  ]).slice(0, input.maximumDirections ?? 4);
   const evidenceRefs = uniq([...posture.evidenceRefs, ...style.evidenceRefs, ...memory.evidenceRefs]);
   return foundations.map((foundation, index) => {
     const requiredRoles: GarmentRole[] = foundation === "dress" ? ["dress", "shoes"]
@@ -176,7 +176,11 @@ function garmentHardReasons(
   }
   // Profile avoidances guide direction ranking. Only a current/durable customer
   // prohibition or active suppression may become a hard item veto.
-  if (garment.formality && (formalityOrdinal(garment.formality) < formalityOrdinal(direction.formalityBand.minimum)
+  const minimumFormality = Math.max(
+    0,
+    formalityOrdinal(direction.formalityBand.minimum) - (garment.role === "shoes" ? 1 : 0),
+  );
+  if (garment.formality && (formalityOrdinal(garment.formality) < minimumFormality
     || formalityOrdinal(garment.formality) > formalityOrdinal(direction.formalityBand.maximum))) reasons.push("formality-conflict");
   if (posture.carryingPosture.secureStorage === "pocket-required" && ["dress", "jumpsuit", "bottom", "coordinated-set"].includes(garment.role) && garment.securePockets !== true) reasons.push("carrying-conflict");
   if (garment.role === "shoes" && posture.footwearRequirements.some((item) => item.kind === "walking" && item.value === "sustained")
@@ -292,6 +296,16 @@ export function composeRestrainedLooks(input: {
     }
   }
   return looks;
+}
+
+/** Rebuild the portfolio from the current eligible wardrobe after memory changes. */
+export function rebuildViableDirectionPortfolio(retrievals: DirectionRetrieval[]) {
+  return retrievals.filter((retrieval) => {
+    if (retrieval.foundationCandidates.length === 0) return false;
+    if ((retrieval.supportCandidates.shoes?.length ?? 0) === 0) return false;
+    return !retrieval.direction.requiredRoles.includes("bag")
+      || (retrieval.supportCandidates.bag?.length ?? 0) > 0;
+  });
 }
 
 export function hardValidateLook(input: {
