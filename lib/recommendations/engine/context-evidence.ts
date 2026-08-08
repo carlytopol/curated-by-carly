@@ -126,7 +126,7 @@ export function buildContextEvidence(input: {
   const stadium = contains(combined, /\b(stadium|ballpark|truist park|arena concert)\b/);
   const rejectsFormalOccasionwear = contains(
     combined,
-    /\b(?:too|overly)\s+formal\b|\bformal\s+(?:dresses?|wear|garments?|pieces?)\b[\s\S]{0,120}\b(?:should\s+not|shouldn['’]?t|do\s+not|don['’]?t|avoid|only|unless)\b|\b(?:should\s+not|shouldn['’]?t|do\s+not|don['’]?t|avoid)\b[\s\S]{0,120}\bformal\s+(?:dresses?|wear|garments?|pieces?)\b/,
+    /\bnon[- ]?formal\b|\b(?:too|overly)\s+formal\b|\bformal\s+(?:dresses?|wear|garments?|pieces?)\b[\s\S]{0,120}\b(?:inappropriate|unsuitable|not appropriate|should\s+not|shouldn['’]?t|do\s+not|don['’]?t|avoid|only|unless)\b|\b(?:inappropriate|unsuitable|not appropriate|should\s+not|shouldn['’]?t|do\s+not|don['’]?t|avoid)\b[\s\S]{0,120}\bformal\s+(?:dresses?|wear|garments?|pieces?)\b/,
   );
   const explicitlyRequestsFormal = contains(
     combined,

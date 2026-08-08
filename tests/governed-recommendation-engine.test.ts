@@ -1075,10 +1075,11 @@ test("shopping and outdoor lunch produces a polished-casual look without a venue
 test("a non-formal correction cannot be inverted into a formal request or recycle occasion dresses", () => {
   const evidence = context({
     title: "Neighborhood dinner reached on foot",
-    notes: "These are formal dresses and should not be worn unless the occasion calls for it. Try again with new outfits.",
+    notes: "These formal dresses are inappropriate for this non-formal dinner. Please regenerate with new outfits.",
     high: 88,
   });
   assert.equal(evidence.constraintMatrix.requestedPolish, "polished-casual");
+  assert.equal(evidence.dressingPosture.requestedPolish, "polished-casual");
   assert.ok(evidence.constraintMatrix.hard.some((entry) => entry.code === "user-no-formal-occasionwear"));
 
   const formalDress = item("Dresses", "Black lace short-sleeve mini shift dress");
@@ -1096,6 +1097,7 @@ test("a non-formal correction cannot be inverted into a formal request or recycl
   const formalAudit = result.eligibilityAudit.find((audit) => audit.itemId === formalDress.id);
   assert.ok(formalAudit?.rejectionReasons.includes("user-rejected-formal-occasionwear"));
   assert.equal(result.options.length, 1);
+  assert.equal(result.stylingBrief.desiredPolish, "polished-casual");
   assert.ok(result.options[0]?.composition.bag);
   assert.ok(result.options[0]?.composition.fragrance);
   assert.ok(!result.options[0]?.itemIds.includes(formalDress.id));

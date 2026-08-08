@@ -54,7 +54,7 @@ export function durablePolishCorrection(
   eventTitle: string,
 ): DurablePolishCorrection | null {
   const text = question.toLowerCase();
-  const value = /\b(too formal|less formal|more casual|too dressed|overdressed|wrong (?:choice|choices|outfit|outfits)[\s\S]{0,80}formal|provided formal wear|gave me formal wear|submitted formal wear|formal (?:dresses?|wear|garments?|pieces?)[\s\S]{0,120}(?:should not|shouldn['’]?t|do not|don['’]?t|avoid|unless))\b/.test(text)
+  const value = /\b(too formal|less formal|more casual|too dressed|overdressed|wrong (?:choice|choices|outfit|outfits)[\s\S]{0,80}formal|provided formal wear|gave me formal wear|submitted formal wear|formal (?:dresses?|wear|garments?|pieces?)[\s\S]{0,120}(?:inappropriate|unsuitable|not appropriate|should not|shouldn['’]?t|do not|don['’]?t|avoid|unless))\b/.test(text)
     ? "easy_considered" as const
     : /\b(more polished|more elevated|more refined|too casual|not polished enough)\b/.test(text)
       ? "polished" as const

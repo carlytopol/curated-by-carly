@@ -27,7 +27,7 @@ test("temporary event constraints do not become global polish preferences", () =
 test("formal occasionwear rejection becomes a dinner-scoped considered correction", () => {
   assert.deepEqual(
     durablePolishCorrection(
-      "These are formal dresses and should not be worn unless the occasion calls for it.",
+      "These formal dresses are inappropriate for this non-formal dinner.",
       "Dinner nearby",
     ),
     {
