@@ -62,11 +62,10 @@ function effectiveHeat(context: ContextEvidence) {
   );
 }
 
-function usesLongPants(outfit: CompleteOutfit) {
+function usesPantsFoundation(outfit: CompleteOutfit) {
   if (outfit.foundation.kind === "dress-or-jumpsuit") return false;
   const bottom = traits(outfit.foundation.bottom);
-  return /\b(pants?|trousers?|jeans?|leggings?)\b/.test(bottom.text) &&
-    !/\b(shorts?|bermudas?|capris?|cropped|culottes?)\b/.test(bottom.text);
+  return /\b(pants?|trousers?|jeans?|leggings?|capris?|culottes?)\b/.test(bottom.text);
 }
 
 function hardReject(items: EngineWardrobeItem[], context: ContextEvidence, pairs: IncompatibleWardrobePair[]) {
@@ -513,7 +512,7 @@ export function generateGovernedRecommendations(input: {
   const usedShoes = new Set<string>();
   const hotOutdoorSet = ["hot", "extreme"].includes(input.context.constraintMatrix.heatSeverity) &&
     input.context.setting.value !== "indoor";
-  let longPantsOptionUsed = false;
+  let pantsOptionUsed = false;
   for (const candidate of candidates) {
     const mainIds = candidate.itemIds.filter((id) => {
       const item = eligible.find((entry) => entry.id === id);
@@ -521,10 +520,10 @@ export function generateGovernedRecommendations(input: {
     });
     if (mainIds.some((id) => usedMain.has(id))) continue;
     if (eventPolicyEnabled && eventPolicy.requireDistinctFootwear && usedShoes.has(candidate.composition.shoes.id)) continue;
-    const candidateUsesLongPants = usesLongPants(candidate.composition);
-    if (hotOutdoorSet && candidateUsesLongPants && longPantsOptionUsed) continue;
+    const candidateUsesPants = usesPantsFoundation(candidate.composition);
+    if (hotOutdoorSet && candidateUsesPants && pantsOptionUsed) continue;
     options.push(candidate);
-    if (candidateUsesLongPants) longPantsOptionUsed = true;
+    if (candidateUsesPants) pantsOptionUsed = true;
     mainIds.forEach((id) => usedMain.add(id));
     usedShoes.add(candidate.composition.shoes.id);
     if (options.length >= (input.optionCount ?? 3)) break;
