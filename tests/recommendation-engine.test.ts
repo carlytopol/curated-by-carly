@@ -36,7 +36,7 @@ test("accepts exactly three complete and materially different outfits", () => {
   assert.equal(repeated.valid, false);
 });
 
-test("rules-first fallback returns complete looks with shoes while fragrance remains optional", () => {
+test("rules-first fallback returns complete looks with shoes, handbag, and fragrance", () => {
   const wardrobe = [
     { id: "dress-a", category: "Dresses", item_name: "Green day dress" },
     { id: "dress-b", category: "Dresses", item_name: "Navy dinner dress" },
@@ -52,7 +52,8 @@ test("rules-first fallback returns complete looks with shoes while fragrance rem
   assert.equal(options.flatMap((option) => option.wardrobeItemIds).every((id) => ownedIds.has(id)), true);
   assert.equal(isMainClothingItem(wardrobe[3]), false, "shoes are reusable support, not a distinct main look");
   assert.equal(options.every((option) => option.wardrobeItemIds.includes("shoe-a")), true);
-  assert.equal(options.every((option) => !option.wardrobeItemIds.includes("scent-a")), true);
+  assert.equal(options.every((option) => option.wardrobeItemIds.includes("bag-a")), true);
+  assert.equal(options.every((option) => option.wardrobeItemIds.includes("scent-a")), true);
 });
 
 test("rules-first fallback varies both tops and bottoms before repeating either", () => {
@@ -75,7 +76,7 @@ test("rules-first fallback varies both tops and bottoms before repeating either"
   assert.equal(new Set(options.map((option) => option.wardrobeItemIds.find((id) => id.startsWith("top-")))).size, 3);
   assert.equal(new Set(options.map((option) => option.wardrobeItemIds.find((id) => id.startsWith("short-")))).size, 3);
   assert.equal(new Set(options.map((option) => option.wardrobeItemIds.find((id) => id.startsWith("shoe-")))).size, 3);
-  assert.equal(options.every((option) => option.wardrobeItemIds.every((id) => !id.startsWith("scent-"))), true);
+  assert.equal(options.every((option) => option.wardrobeItemIds.some((id) => id.startsWith("scent-"))), true);
   assert.deepEqual(validateRecommendationSet(options, wardrobe), { valid: true });
 });
 
@@ -156,7 +157,7 @@ test("a pocket requirement excludes skirts and one-pieces without confirmed pock
   ), true);
 });
 
-test("missing shoes are completed while fragrance remains optional", () => {
+test("missing shoes and fragrance are completed from eligible owned support pieces", () => {
   const wardrobe = [
     { id: "dress-a", category: "Dresses" },
     { id: "dress-b", category: "Dresses" },
@@ -170,7 +171,7 @@ test("missing shoes are completed while fragrance remains optional", () => {
     { summary: "C", rationale: "Third.", wardrobeItemIds: ["dress-c"] },
   ], wardrobe);
   assert.equal(completed.every((option) => option.wardrobeItemIds.includes("shoes")), true);
-  assert.equal(completed.every((option) => !option.wardrobeItemIds.includes("perfume")), true);
+  assert.equal(completed.every((option) => option.wardrobeItemIds.includes("perfume")), true);
   assert.deepEqual(validateRecommendationSet(completed, wardrobe), { valid: true });
 });
 

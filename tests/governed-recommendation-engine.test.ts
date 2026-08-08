@@ -1072,6 +1072,35 @@ test("shopping and outdoor lunch produces a polished-casual look without a venue
   assert.ok(!result.options[0].itemIds.includes(wardrobe[1].id));
 });
 
+test("a non-formal correction cannot be inverted into a formal request or recycle occasion dresses", () => {
+  const evidence = context({
+    title: "Neighborhood dinner reached on foot",
+    notes: "These are formal dresses and should not be worn unless the occasion calls for it. Try again with new outfits.",
+    high: 88,
+  });
+  assert.equal(evidence.constraintMatrix.requestedPolish, "polished-casual");
+  assert.ok(evidence.constraintMatrix.hard.some((entry) => entry.code === "user-no-formal-occasionwear"));
+
+  const formalDress = item("Dresses", "Black lace short-sleeve mini shift dress");
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      formalDress,
+      item("Tops", "Lightweight cotton short-sleeve blouse"),
+      item("Skirts", "Casual cotton A-line skirt"),
+      item("Shoes", "Comfortable leather walking loafers"),
+      item("Handbags", "Small leather crossbody bag"),
+      item("Perfumes / Fragrances", "Fresh summer fragrance"),
+    ],
+    context: evidence,
+  });
+  const formalAudit = result.eligibilityAudit.find((audit) => audit.itemId === formalDress.id);
+  assert.ok(formalAudit?.rejectionReasons.includes("user-rejected-formal-occasionwear"));
+  assert.equal(result.options.length, 1);
+  assert.ok(result.options[0]?.composition.bag);
+  assert.ok(result.options[0]?.composition.fragrance);
+  assert.ok(!result.options[0]?.itemIds.includes(formalDress.id));
+});
+
 test("balanced candidate search reaches suitable casual pieces beyond the first eight in each role", () => {
   const formalTops = Array.from({ length: 10 }, (_, index) =>
     item("Tops", `Formal silk evening blouse ${index}`));

@@ -138,9 +138,9 @@ test("V2 enforces an authoritative suppression across retrieval, regeneration, o
 
   const looks = composeRestrainedLooks({ retrievals: initial, generatedAt: now });
   assert.equal(looks.length, 1, "fewer than three excellent foundations must remain fewer than three");
-  assert.deepEqual(looks[0]?.items.map((item) => item.itemId), ["polished-top", "pocket-bottom", "walking-shoe"]);
-  assert.ok(looks[0]?.omittedOptionalRoles.includes("bag"), "support pieces remain optional and foundation-relative");
-  assert.ok(looks[0]?.omittedOptionalRoles.includes("fragrance"));
+  assert.deepEqual(looks[0]?.items.map((item) => item.itemId), ["polished-top", "pocket-bottom", "walking-shoe", "optional-bag", "optional-fragrance"]);
+  assert.ok(!looks[0]?.omittedOptionalRoles.includes("bag"));
+  assert.ok(!looks[0]?.omittedOptionalRoles.includes("fragrance"));
   assert.ok(looks.every((look) => look.items.every((item) => item.itemId !== "suppressed-graphic-top")));
 
   const consultationItemIds = looks.flatMap((look) => look.items.map((item) => item.itemId));
@@ -188,9 +188,9 @@ test("Michelin date-night contract excludes a suppressed graphic tee and weak ut
 
   const looks = composeRestrainedLooks({ retrievals, generatedAt: now });
   assert.equal(looks.length, 1, "the engine must return fewer options instead of padding a weak date-night set");
-  assert.deepEqual(looks[0]?.items.map((item) => item.itemId), ["date-night-top", "date-night-bottom", "polished-flat"]);
-  assert.ok(looks[0]?.omittedOptionalRoles.includes("bag"));
-  assert.ok(looks[0]?.omittedOptionalRoles.includes("fragrance"));
+  assert.deepEqual(looks[0]?.items.map((item) => item.itemId), ["date-night-top", "date-night-bottom", "polished-flat", "optional-chain-bag", "optional-fragrance"]);
+  assert.ok(!looks[0]?.omittedOptionalRoles.includes("bag"));
+  assert.ok(!looks[0]?.omittedOptionalRoles.includes("fragrance"));
   assert.ok(looks.every((look) => !look.items.some((item) => item.itemId === "suppressed-graphic-top")));
   assert.ok(looks.every((look) => !look.evidenceRefs.some((item) => item.evidenceId === "suppressed-graphic-top")));
 });

@@ -31,6 +31,7 @@ const ONE_PIECE_CATEGORIES = new Set([
   "Dresses", "Jumpsuits / Rompers", "Formal Wear", "Swimwear", "Swim Wear",
 ]);
 const SHOE_CATEGORIES = new Set(["Shoes"]);
+const BAG_CATEGORIES = new Set(["Handbags", "Bags"]);
 const FRAGRANCE_CATEGORIES = new Set(["Perfumes / Fragrances", "Colognes / Grooming"]);
 
 function isFragranceCategory(category: string | null | undefined) {
@@ -133,7 +134,14 @@ export function isCompleteOutfit(ids: string[], wardrobe: RecommendationWardrobe
   const hasFoundation = roles.includes("one-piece") || (roles.includes("top") && roles.includes("bottom"));
   const shoesExist = wardrobe.some((item) => item.category && SHOE_CATEGORIES.has(item.category));
   const hasShoes = selected.some((item) => item.category && SHOE_CATEGORIES.has(item.category));
-  return hasFoundation && (!shoesExist || hasShoes);
+  const bagsExist = wardrobe.some((item) => item.category && BAG_CATEGORIES.has(item.category));
+  const hasBag = selected.some((item) => item.category && BAG_CATEGORIES.has(item.category));
+  const fragrancesExist = wardrobe.some((item) => isFragranceCategory(item.category));
+  const hasFragrance = selected.some((item) => isFragranceCategory(item.category));
+  return hasFoundation
+    && (!shoesExist || hasShoes)
+    && (!bagsExist || hasBag)
+    && (!fragrancesExist || hasFragrance);
 }
 
 export function completeRecommendationDrafts(
@@ -143,6 +151,8 @@ export function completeRecommendationDrafts(
   eventContext = "",
 ) {
   const shoes = wardrobe.filter((item) => item.category === "Shoes");
+  const bags = wardrobe.filter((item) => item.category && BAG_CATEGORIES.has(item.category));
+  const fragrances = wardrobe.filter((item) => isFragranceCategory(item.category));
   return drafts.map((draft) => {
     const ids = [...new Set(draft.wardrobeItemIds)];
     const addCompatible = (candidates: RecommendationWardrobeItem[]) => {
@@ -154,6 +164,8 @@ export function completeRecommendationDrafts(
       if (candidate) ids.push(candidate.id);
     };
     if (!ids.some((id) => shoes.some((shoe) => shoe.id === id))) addCompatible(shoes);
+    if (!ids.some((id) => bags.some((bag) => bag.id === id))) addCompatible(bags);
+    if (!ids.some((id) => fragrances.some((fragrance) => fragrance.id === id))) addCompatible(fragrances);
     return { ...draft, wardrobeItemIds: ids };
   });
 }
@@ -222,6 +234,7 @@ export function buildDeterministicRecommendationSet(
     new Set(["Handbags", "Bags"]),
     new Set(["Jewelry", "Watches & Jewelry", "Accessories"]),
     new Set(["Outerwear"]),
+    FRAGRANCE_CATEGORIES,
   ];
   const options: RecommendationDraft[] = [];
   const usedFoundationItemCounts = new Map<string, number>();

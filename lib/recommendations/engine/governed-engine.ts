@@ -452,17 +452,19 @@ export function generateGovernedRecommendations(input: {
       let bag: EngineWardrobeItem | null = null;
       if (input.context.bagAllowed.value !== false) {
         bag = bestSupport(byRole("bag"), selected, input.context, pairs);
+        if (!bag && byRole("bag").length) {
+          rejectedCandidateCount += 1;
+          continue;
+        }
         if (bag) selected.push(bag);
       }
-      // Fragrance is an optional editorial note, never a structural outfit
-      // requirement. Add it only when the customer explicitly asks for scent.
-      const requestsFragrance = /\b(perfume|fragrance|cologne|scent)\b/i.test([
-        input.context.userNotes.value,
-        input.context.intention.value,
-      ].filter(Boolean).join(" "));
-      const fragrance = requestsFragrance
-        ? bestSupport(byRole("fragrance"), selected, input.context, pairs)
-        : null;
+      // Fragrance is a finishing support piece, not a structural garment role,
+      // but the Curated service standard includes it whenever one is eligible.
+      const fragrance = bestSupport(byRole("fragrance"), selected, input.context, pairs);
+      if (!fragrance && byRole("fragrance").length) {
+        rejectedCandidateCount += 1;
+        continue;
+      }
       if (fragrance) selected.push(fragrance);
       const composition: CompleteOutfit = {
         foundation,

@@ -277,10 +277,10 @@ export function composeRestrainedLooks(input: {
       const foundationSignature = foundation.map((item) => item.itemId).sort().join(":");
       if (usedFoundationSignatures.has(foundationSignature)) continue;
       const shoe = shoes.find((item) => !usedShoes.has(item.itemId)) ?? shoes[index % shoes.length];
-      const requiredBag = retrieval.direction.requiredRoles.includes("bag");
-      const bag = requiredBag ? retrieval.supportCandidates.bag?.[0] : undefined;
-      if (requiredBag && !bag) continue;
-      const items = [...foundation, shoe, ...(bag ? [bag] : [])];
+      const bagAllowed = !retrieval.direction.prohibitedRoles.includes("bag");
+      const bag = bagAllowed ? retrieval.supportCandidates.bag?.[0] : undefined;
+      const fragrance = retrieval.supportCandidates.fragrance?.[0];
+      const items = [...foundation, shoe, ...(bag ? [bag] : []), ...(fragrance ? [fragrance] : [])];
       const evidenceRefs = uniq(items.flatMap((item) => item.evidenceRefs));
       looks.push({
         schemaVersion: CANDIDATE_LOOK_VERSION, taxonomyVersion: RECOMMENDATION_V2_TAXONOMY_VERSION,
