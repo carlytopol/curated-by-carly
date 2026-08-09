@@ -1369,3 +1369,22 @@ test("deep retrieval finds a third qualified shoe beyond rejected high-ranked fo
     qualifiedShoes.some((shoe) => shoe.id === option.composition.shoes.id)
   ));
 });
+
+test("a broad wardrobe finds three options inside the interactive compute budget", () => {
+  const broadWardrobe = [
+    ...Array.from({ length: 20 }, (_, index) => item("Tops", `Solid cotton blouse ${index + 1}`, { rotationScore: 80 - index })),
+    ...Array.from({ length: 20 }, (_, index) => item("Skirts", `Solid cotton casual skirt ${index + 1}`, { rotationScore: 80 - index })),
+    ...Array.from({ length: 32 }, (_, index) => item("Shoes", `Solid leather walking sandal ${index + 1}`, { rotationScore: 80 - index })),
+    ...Array.from({ length: 3 }, (_, index) => item("Handbags", `Solid leather shoulder bag ${index + 1}`)),
+    ...Array.from({ length: 3 }, (_, index) => item("Perfumes / Fragrances", `Fresh fragrance ${index + 1}`)),
+  ];
+  const startedAt = performance.now();
+  const result = generateGovernedRecommendations({
+    wardrobe: broadWardrobe,
+    context: context({ title: "Dinner with stylish friends", notes: "Polished and cool", high: 82 }),
+    optionCount: 3,
+  });
+  const elapsedMs = performance.now() - startedAt;
+  assert.equal(result.options.length, 3);
+  assert.ok(elapsedMs < 5_000, `Broad wardrobe generation took ${elapsedMs.toFixed(0)}ms`);
+});

@@ -427,18 +427,27 @@ export function generateGovernedRecommendations(input: {
   // Search deeply enough that rejected high-ranked pieces cannot hide a third
   // excellent direction farther into a broad wardrobe. Hard validation still
   // decides eligibility; these bounds only keep the interactive request finite.
-  const MAX_ONE_PIECES = 40;
-  const MAX_TOPS = 24;
-  const MAX_BOTTOMS = 24;
+  const MAX_ONE_PIECES = 24;
+  const MAX_TOPS = 12;
+  const MAX_BOTTOMS = 12;
   const MAX_SHOES = 32;
-  const onePieceFoundations: CompleteOutfit["foundation"][] = byRole("one-piece")
+  // Role pools are immutable within a request. Resolve and sort them once;
+  // rebuilding them inside the candidate loops made broad wardrobes slow
+  // enough to exceed the client response budget.
+  const onePieceCandidates = byRole("one-piece");
+  const topCandidates = byRole("top");
+  const bottomCandidates = byRole("bottom");
+  const shoeCandidates = byRole("shoes").slice(0, MAX_SHOES);
+  const bagCandidates = byRole("bag");
+  const fragranceCandidates = byRole("fragrance");
+  const onePieceFoundations: CompleteOutfit["foundation"][] = onePieceCandidates
     .slice(0, MAX_ONE_PIECES)
     .map((onePiece): CompleteOutfit["foundation"] => ({
       kind: "dress-or-jumpsuit", onePiece, top: null, bottom: null,
     }));
-  const separateFoundations: CompleteOutfit["foundation"][] = byRole("top")
+  const separateFoundations: CompleteOutfit["foundation"][] = topCandidates
     .slice(0, MAX_TOPS)
-    .flatMap((top) => byRole("bottom")
+    .flatMap((top) => bottomCandidates
       .slice(0, MAX_BOTTOMS)
       .map((bottom): CompleteOutfit["foundation"] => ({
         kind: "separates", onePiece: null, top, bottom,
@@ -454,7 +463,7 @@ export function generateGovernedRecommendations(input: {
     const foundationItems = foundation.kind === "dress-or-jumpsuit"
       ? [foundation.onePiece]
       : [foundation.top, foundation.bottom];
-    const shoes = byRole("shoes").slice(0, MAX_SHOES);
+    const shoes = shoeCandidates;
     if (!shoes.length) {
       // Preserve observable evidence for candidates rejected before a complete
       // outfit can be assembled. Previously this early exit made production
@@ -468,28 +477,30 @@ export function generateGovernedRecommendations(input: {
     // otherwise viable alternatives.
     for (const shoe of shoes) {
       const base = [...foundationItems, shoe];
-      const eligibleBags = byRole("bag");
       const bagChoices: Array<EngineWardrobeItem | null> = input.context.bagAllowed.value === false
         ? [null]
-        : eligibleBags.length
-          ? compatibleSupports(eligibleBags, base, input.context, pairs).slice(0, 3)
+        : bagCandidates.length
+          ? compatibleSupports(bagCandidates, base, input.context, pairs).slice(0, 3)
           : [null];
       if (!bagChoices.length) {
         rejectedCandidateCount += 1;
         continue;
       }
-      for (const bag of bagChoices) {
+      // Pair finishing pieces by rank instead of evaluating the full bag ×
+      // fragrance Cartesian product. This preserves three distinct finishing
+      // directions while avoiding redundant candidates that can exhaust the
+      // interactive request budget in a broad wardrobe.
+      for (const [bagIndex, bag] of bagChoices.entries()) {
         const withBag = bag ? [...base, bag] : base;
-        const eligibleFragrances = byRole("fragrance");
-        const fragranceChoices: Array<EngineWardrobeItem | null> = eligibleFragrances.length
-          ? compatibleSupports(eligibleFragrances, withBag, input.context, pairs).slice(0, 3)
+        const fragranceChoices: Array<EngineWardrobeItem | null> = fragranceCandidates.length
+          ? compatibleSupports(fragranceCandidates, withBag, input.context, pairs).slice(0, 3)
           : [null];
         if (!fragranceChoices.length) {
           rejectedCandidateCount += 1;
           continue;
         }
-        for (const fragrance of fragranceChoices) {
-          const selected = fragrance ? [...withBag, fragrance] : withBag;
+        const fragrance = fragranceChoices[bagIndex % fragranceChoices.length];
+        const selected = fragrance ? [...withBag, fragrance] : withBag;
       const composition: CompleteOutfit = {
         foundation,
         shoes: shoe,
@@ -530,7 +541,6 @@ export function generateGovernedRecommendations(input: {
         personalStyle,
         stylingBriefVersion: stylingBrief.schemaVersion,
       });
-        }
       }
     }
   }
