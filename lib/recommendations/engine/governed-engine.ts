@@ -113,6 +113,12 @@ function hardReject(items: EngineWardrobeItem[], context: ContextEvidence, pairs
   const foundation = itemTraits.filter((value) => ["top", "bottom", "one-piece"].includes(value.role));
   if (foundation.filter((value) => value.blueDenim).length > 1) reasons.push("double-blue-denim");
   if (foundation.filter((value) => value.pattern === "statement").length > 1) reasons.push("competing-statements");
+  const visibleStyleElements = itemTraits.filter((value) =>
+    ["top", "bottom", "one-piece", "shoes", "bag", "layer"].includes(value.role)
+  );
+  if (visibleStyleElements.filter((value) => value.pattern === "statement").length > 1) {
+    reasons.push("competing-statement-elements");
+  }
   const formalities = foundation.map((value) => value.formality).filter((value): value is number => value != null);
   if (formalities.length > 1 && Math.max(...formalities) - Math.min(...formalities) >= 2) reasons.push("formality-conflict");
   const target = targetFormality(context);
@@ -278,11 +284,11 @@ function assess(items: EngineWardrobeItem[], context: ContextEvidence, pairs: In
       ? heat >= 82 ? Math.max(0, 110 - warmthAverage * 24) : heat <= 45 ? Math.min(100, warmthAverage * 22) : 85
       : null,
     comfort: context.walking.value ? (shoe?.walkability != null ? shoe.walkability * 20 : 55) : null,
-    cohesion: rejectionReasons.some((reason) => ["formality-conflict", "competing-statements", "double-blue-denim"].includes(reason)) ? 0 : 88,
+    cohesion: rejectionReasons.some((reason) => ["formality-conflict", "competing-statements", "competing-statement-elements", "double-blue-denim"].includes(reason)) ? 0 : 88,
     completeness: rejectionReasons.some((reason) => reason.startsWith("missing") || reason === "invalid-foundation-structure") ? 0 : 100,
     intent: context.intention.value ? 82 : null,
     fit: null,
-    color: foundation.filter((value) => value.pattern === "statement").length <= 1 ? 82 : 20,
+    color: values.filter((value) => ["top", "bottom", "one-piece", "shoes", "bag", "layer"].includes(value.role) && value.pattern === "statement").length <= 1 ? 82 : 20,
     polish: shoe?.polish != null
       ? Math.min(100, shoe.polish * 20 + (rejectionReasons.includes("formality-conflict") ? 0 : 10))
       : null,

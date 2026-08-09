@@ -1103,6 +1103,44 @@ test("a non-formal correction cannot be inverted into a formal request or recycl
   assert.ok(!result.options[0]?.itemIds.includes(formalDress.id));
 });
 
+test("team apparel is reserved for explicit team or game-watching occasions", () => {
+  const teamTop = item("Shirts", "College raglan graphic shirt", {
+    designer: "Campus label",
+    styling_suggestion: "Keep for game-day and team-watching plans.",
+  });
+  const ordinary = auditItemEligibility(teamTop, context({
+    title: "Lunch followed by visiting friends",
+    high: 88,
+  }));
+  assert.ok(ordinary.rejectionReasons.includes("team-apparel-without-team-occasion"));
+
+  const game = auditItemEligibility(teamTop, context({
+    title: "Watching the team play at a friend’s house",
+    high: 88,
+  }));
+  assert.ok(!game.rejectionReasons.includes("team-apparel-without-team-occasion"));
+});
+
+test("statement shoes or an embroidered multicolor bag cannot compete with a statement foundation", () => {
+  const evidence = context({ title: "Casual lunch and visiting friends", high: 90 });
+  const sportsLook = traceOutfitValidation([
+    item("Shirts", "Graphic raglan shirt", { color: "White and blue" }),
+    item("Jeans", "Medium-wash straight-leg jeans", { color: "Blue" }),
+    item("Shoes", "Metallic silver star-detail loafers", { color: "Silver" }),
+    item("Handbags", "Multicolor embroidered knot-front clutch", { color: "Multicolor" }),
+    item("Perfumes / Fragrances", "Garden fragrance"),
+  ], evidence);
+  assert.ok(sportsLook.rejectionReasons.includes("competing-statement-elements"));
+
+  const dressLook = traceOutfitValidation([
+    item("Dresses", "Baroque-print strappy mini dress", { color: "Multicolor" }),
+    item("Shoes", "Metallic silver star-detail loafers", { color: "Silver" }),
+    item("Handbags", "Multicolor embroidered knot-front clutch", { color: "Multicolor" }),
+    item("Perfumes / Fragrances", "Garden fragrance"),
+  ], evidence);
+  assert.ok(dressLook.rejectionReasons.includes("competing-statement-elements"));
+});
+
 test("balanced candidate search reaches suitable casual pieces beyond the first eight in each role", () => {
   const formalTops = Array.from({ length: 10 }, (_, index) =>
     item("Tops", `Formal silk evening blouse ${index}`));

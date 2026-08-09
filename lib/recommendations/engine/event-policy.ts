@@ -113,6 +113,26 @@ export function auditItemEligibility(
   const schoolCommunity = policy.archetype === "school-community-day";
   const extremeHeat = effectiveHeat(context) >= 90 || context.constraintMatrix.heatSeverity === "extreme";
   const foundationRole = ["top", "bottom", "one-piece"].includes(traits.role);
+  const eventText = [
+    context.agendaItem.title,
+    context.venue.value,
+    context.userNotes.value,
+    context.intention.value,
+  ].filter(Boolean).join(" ").toLowerCase();
+  const itemText = [
+    item.designer,
+    item.item_name,
+    item.category,
+    item.subcategory,
+    item.styling_suggestion,
+  ].filter(Boolean).join(" ").toLowerCase();
+  const teamApparel = /\b(game.?day|team apparel|fan gear|florida gators?|raglan graphic)\b/.test(itemText);
+  const teamOccasion = /\b(?:watch(?:ing)?(?:\s+the)?\s+(?:game|team)|football game|basketball game|baseball game|soccer match|tailgate|game.?day|gators? game)\b/.test(eventText);
+  reject(
+    "team-apparel-without-team-occasion",
+    foundationRole && teamApparel && !teamOccasion,
+    "Team-branded apparel is reserved for an explicit team, game-watching, or tailgate occasion.",
+  );
   reject(
     "user-rejected-formal-occasionwear",
     policy.hardConstraints.includes("user-no-formal-occasionwear") &&
