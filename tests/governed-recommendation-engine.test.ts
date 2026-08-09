@@ -1290,3 +1290,47 @@ test("balanced candidate search reaches suitable casual pieces beyond the first 
   assert.ok(result.options[0].itemIds.includes(casualBottom.id));
   assert.ok(result.options[0].itemIds.includes(casualShoes.id));
 });
+
+test("an everyday lunch rejects unverified dressy one-pieces instead of calling them casual", () => {
+  const evidence = context({
+    title: "Lunch appointment followed by ordinary daytime plans",
+    notes: "Put together, but this is not a formal occasion.",
+    high: 86,
+  });
+  const ornateDress = item("Dresses", "Embroidered strappy tiered midi dress");
+  const velvetJumpsuit = item("Jumpsuits", "Velvet bow jumpsuit");
+  const casualDress = item("Dresses", "Cotton poplin day dress");
+
+  for (const garment of [ornateDress, velvetJumpsuit]) {
+    const audit = auditItemEligibility(garment, evidence);
+    assert.ok(audit.rejectionReasons.includes("everyday-one-piece-unverified"));
+  }
+  assert.equal(auditItemEligibility(casualDress, evidence).eligible, true);
+
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      ornateDress,
+      velvetJumpsuit,
+      casualDress,
+      item("Shoes", "Neutral leather walking sandals"),
+      item("Handbags", "Tan leather crossbody bag"),
+      item("Perfumes / Fragrances", "Fresh citrus fragrance"),
+    ],
+    context: evidence,
+  });
+  assert.equal(result.options.length, 1);
+  assert.ok(result.options[0].itemIds.includes(casualDress.id));
+  assert.ok(!result.options[0].itemIds.includes(ornateDress.id));
+  assert.ok(!result.options[0].itemIds.includes(velvetJumpsuit.id));
+});
+
+test("a patterned statement dress rejects contrasting statement sneakers", () => {
+  const evidence = context({ title: "Casual lunch appointment", high: 84 });
+  const look = traceOutfitValidation([
+    item("Dresses", "Cotton Farm-style multicolor patterned day dress"),
+    item("Shoes", "Black and white contrast sneakers"),
+    item("Handbags", "Solid tan leather bag"),
+    item("Perfumes / Fragrances", "Fresh citrus fragrance"),
+  ], evidence);
+  assert.ok(look.rejectionReasons.includes("competing-statement-elements"));
+});

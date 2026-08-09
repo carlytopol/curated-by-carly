@@ -122,7 +122,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
   ) formality = evidenceFormality.value;
   else if (/\b(black.?tie|gala|formal|gowns?|tuxedo)\b/.test(value)) formality = 5;
   else if (occasionLaceFoundation || /\b(cocktail|evening|satin|silk|charmeuse|sequined?|beaded|organza|tulle)\b/.test(value)) formality = 4;
-  else if (/\b(blazers?|tailored|dress shirts?|loafers?|pumps?|midi dresses?)\b/.test(value)) formality = 3;
+  else if (/\b(blazers?|tailored|dress shirts?|loafers?|pumps?)\b/.test(value)) formality = 3;
   else if (/\b(casual|denim|chambray|tees?|tanks?|sneakers?|shorts|utility)\b/.test(value)) formality = 2;
   else if (/\b(active|athletic|sweatshirts?|hoodies?|gym|swim|cover.?ups?|kaftans?)\b/.test(value)) formality = 1;
 
@@ -133,7 +133,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
   else if (/\b(short.?sleeves?|cotton|linen|chambray)\b/.test(value)) warmth = 2;
   else if (/\b(tanks?|sleeveless|shorts|sandals?|slides?|swim)\b/.test(value)) warmth = 1;
 
-  const statement = /\b(sequins?|beaded|embellished|embroidered|embroidery|multicolou?r|metallic|glitter|brocade|jacquard|baroque|graphic|animal|floral|bold print|printed|patterned|lace)\b/.test(value);
+  const statement = /\b(sequins?|beaded|embellished|embroidered|embroidery|multicolou?r|multi-color|metallic|glitter|brocade|jacquard|baroque|graphic|animal|floral|bold print|printed|patterned|lace|two-tone|color-?block(?:ed)?|colour-?block(?:ed)?|contrast(?:ing)?)\b|\bblack(?:\s+and\s+|-and-)?white\b/.test(value);
   const solid = /\bsolid\b/.test(value) || (!statement && Boolean(item.color));
   const blueDenim = /\b(blue|navy|indigo|chambray|wash)\b/.test(value) && /\b(denim|chambray|jeans?)\b/.test(value);
   const pump = /\b(pumps?|court shoes?|high heels?)\b/.test(value);

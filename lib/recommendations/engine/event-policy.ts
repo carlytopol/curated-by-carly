@@ -128,6 +128,10 @@ export function auditItemEligibility(
   ].filter(Boolean).join(" ").toLowerCase();
   const teamApparel = /\b(game.?day|team apparel|fan gear|florida gators?|raglan graphic)\b/.test(itemText);
   const teamOccasion = /\b(?:watch(?:ing)?(?:\s+the)?\s+(?:game|team)|football game|basketball game|baseball game|soccer match|tailgate|game.?day|gators? game)\b/.test(eventText);
+  const everydayOnePieceEvidence = traits.role === "one-piece" && (
+    (traits.formality != null && traits.formality <= 3) ||
+    /\b(cotton|linen|jersey|denim|chambray|poplin|shirt.?dress|sundress|day dress|casual|utility|knit dress|sweater dress|romper)\b/.test(traits.text)
+  );
   reject(
     "team-apparel-without-team-occasion",
     foundationRole && teamApparel && !teamOccasion,
@@ -158,6 +162,13 @@ export function auditItemEligibility(
       foundationRole &&
       (traits.formalEveningwear || (traits.formality ?? 0) >= 4),
     "Occasion and formal foundation pieces are not eligible for an everyday casual-social plan.",
+  );
+  reject(
+    "everyday-one-piece-unverified",
+    context.dressingPosture.archetype === "everyday-casual-social" &&
+      traits.role === "one-piece" &&
+      !everydayOnePieceEvidence,
+    "A dress or jumpsuit needs confirmed everyday formality or concrete daytime material evidence before it can be recommended for an ordinary casual-social plan.",
   );
   reject(
     "everyday-formal-footwear",

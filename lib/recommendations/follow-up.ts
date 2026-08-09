@@ -1,6 +1,6 @@
 export function followUpRequiresNewOutfits(question: string, pairPreferenceSaved = false) {
   if (pairPreferenceSaved) return true;
-  return /\b(doesn['’]?t match|do not match|don['’]?t match|wrong (?:choice|choices|outfit|outfits)|too hot|too cold|too warm|too formal|too casual|too relaxed|formal wear|provided heels?|gave me heels?|comfortable shoes?|unavailable|not comfortable|not the mood|replace|swap|change (?:the|this)|try again|start (?:again|over)|new (?:outfit|outfits|option|options|choice|choices|look|looks)|another (?:outfit|option|choice|look)|additional (?:outfits?|options?|choices?|looks?)|better (?:match|outfits?|options?|choices?|looks?)|(?:show|see|display)(?:\s+\w+){0,8}\s+(?:options?|outfits?|looks?|choices?)|no heels?|no jeans?|no long sleeves?|no slides?|no boots?|more polished|need (?:secure )?pockets?|pockets? required)\b/i.test(question);
+  return /\b(doesn['’]?t match|do not match|don['’]?t match|wrong (?:choice|choices|outfit|outfits)|too hot|too cold|too warm|too formal|too dressy|too fancy|overdressed|too casual|too relaxed|formal wear|provided heels?|gave me heels?|comfortable shoes?|unavailable|not comfortable|not the mood|replace|swap|change (?:the|this)|try again|start (?:again|over)|new (?:outfit|outfits|option|options|choice|choices|look|looks)|another (?:outfit|option|choice|look)|additional (?:outfits?|options?|choices?|looks?)|better (?:match|outfits?|options?|choices?|looks?)|(?:show|see|display)(?:\s+\w+){0,8}\s+(?:options?|outfits?|looks?|choices?)|no heels?|no jeans?|no long sleeves?|no slides?|no boots?|more polished|need (?:secure )?pockets?|pockets? required)\b/i.test(question);
 }
 
 export function followUpOnlyRequestsVisibleOptions(question: string) {
@@ -54,7 +54,7 @@ export function durablePolishCorrection(
   eventTitle: string,
 ): DurablePolishCorrection | null {
   const text = question.toLowerCase();
-  const value = /\b(too formal|less formal|more casual|too dressed|overdressed|wrong (?:choice|choices|outfit|outfits)[\s\S]{0,80}formal|provided formal wear|gave me formal wear|submitted formal wear|formal (?:dresses?|wear|garments?|pieces?)[\s\S]{0,120}(?:inappropriate|unsuitable|not appropriate|should not|shouldn['’]?t|do not|don['’]?t|avoid|unless))\b/.test(text)
+  const value = /\b(too formal|less formal|more casual|too dressed|too dressy|too fancy|overdressed|wrong (?:choice|choices|outfit|outfits)[\s\S]{0,80}formal|provided formal wear|gave me formal wear|submitted formal wear|formal (?:dresses?|wear|garments?|pieces?)[\s\S]{0,120}(?:inappropriate|unsuitable|not appropriate|should not|shouldn['’]?t|do not|don['’]?t|avoid|unless))\b/.test(text)
     ? "easy_considered" as const
     : /\b(more polished|more elevated|more refined|too casual|not polished enough)\b/.test(text)
       ? "polished" as const
