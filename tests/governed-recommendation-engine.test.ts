@@ -1334,3 +1334,38 @@ test("a patterned statement dress rejects contrasting statement sneakers", () =>
   ], evidence);
   assert.ok(look.rejectionReasons.includes("competing-statement-elements"));
 });
+
+test("deep retrieval finds a third qualified shoe beyond rejected high-ranked footwear", () => {
+  const evidence = context({ title: "Outdoor lunch followed by visiting friends", high: 86 });
+  const dresses = ["Blue", "Green", "Rose"].map((color, index) => item(
+    "Dresses",
+    `Cotton floral day dress ${index + 1}`,
+    { color, rotationScore: 90 - index },
+  ));
+  const competingShoes = Array.from({ length: 10 }, (_, index) => item(
+    "Shoes",
+    `Metallic embellished statement sneaker ${index + 1}`,
+    { rotationScore: 100 - index },
+  ));
+  const qualifiedShoes = Array.from({ length: 3 }, (_, index) => item(
+    "Shoes",
+    `Solid neutral leather walking sandal ${index + 1}`,
+    { rotationScore: 89 - index },
+  ));
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      ...dresses,
+      ...competingShoes,
+      ...qualifiedShoes,
+      item("Handbags", "Solid tan leather crossbody bag"),
+      item("Perfumes / Fragrances", "Fresh citrus fragrance"),
+    ],
+    context: evidence,
+    optionCount: 3,
+  });
+  assert.equal(result.options.length, 3);
+  assert.equal(new Set(result.options.map((option) => option.composition.shoes.id)).size, 3);
+  assert.ok(result.options.every((option) =>
+    qualifiedShoes.some((shoe) => shoe.id === option.composition.shoes.id)
+  ));
+});

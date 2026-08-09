@@ -424,12 +424,13 @@ export function generateGovernedRecommendations(input: {
       ? preferFreshMainItems(ranked, new Date(), 2)
       : ranked;
   };
-  // Keep this interactive request bounded while preserving the wardrobe's
-  // existing rotation and personal-style ordering.
-  const MAX_ONE_PIECES = 16;
-  const MAX_TOPS = 12;
-  const MAX_BOTTOMS = 12;
-  const MAX_SHOES = 12;
+  // Search deeply enough that rejected high-ranked pieces cannot hide a third
+  // excellent direction farther into a broad wardrobe. Hard validation still
+  // decides eligibility; these bounds only keep the interactive request finite.
+  const MAX_ONE_PIECES = 40;
+  const MAX_TOPS = 24;
+  const MAX_BOTTOMS = 24;
+  const MAX_SHOES = 32;
   const onePieceFoundations: CompleteOutfit["foundation"][] = byRole("one-piece")
     .slice(0, MAX_ONE_PIECES)
     .map((onePiece): CompleteOutfit["foundation"] => ({
