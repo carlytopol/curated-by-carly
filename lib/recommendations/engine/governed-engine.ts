@@ -527,11 +527,14 @@ export function generateGovernedRecommendations(input: {
       trace.finalScore = governedScore;
       trace.approved = valid;
       trace.rejectionReasons = rejectionReasons;
-      // Keep diagnostics observable without serializing an unbounded Cartesian
-      // product in every request log.
+      // Keep diagnostics observable without carrying every valid and rejected
+      // member of the bounded search into persistence. Production wardrobes
+      // can still yield thousands of traces even when only three outfits are
+      // surfaced; retaining that payload delayed an otherwise successful edit
+      // beyond the browser response budget.
       if (!valid && diagnostics.length < 120) diagnostics.push(trace);
       if (!valid) { rejectedCandidateCount += 1; continue; }
-      diagnostics.push(trace);
+      if (diagnostics.length < 120) diagnostics.push(trace);
       candidates.push({
         itemIds: editorial.items.map((item) => item.id),
         composition,
