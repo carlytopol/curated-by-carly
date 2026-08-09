@@ -680,6 +680,38 @@ test("a multi-option edit contains at most one tank direction when other foundat
   assert.ok(tankOptions.length <= 1);
 });
 
+test("bags and fragrances vary across the edit when three compatible choices qualify", () => {
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      ...summerWardrobe(),
+      item("Bags", "Small tan leather shoulder bag", { color: "Tan" }),
+      item("Bags", "Navy leather crossbody bag", { color: "Navy" }),
+      item("Bags", "Ivory structured handbag", { color: "Ivory" }),
+      item("Perfumes / Fragrances", "Neroli eau de parfum"),
+    ],
+    context: context({ title: "Late lunch and visiting friends", notes: "Comfortable but put together", high: 90 }),
+    optionCount: 3,
+  });
+  assert.equal(result.options.length, 3);
+  const bagIds = result.options.map((option) => option.composition.bag?.id);
+  const fragranceIds = result.options.map((option) => option.composition.fragrance?.id);
+  assert.equal(new Set(bagIds).size, 3);
+  assert.equal(new Set(fragranceIds).size, 3);
+});
+
+test("a finishing piece may repeat when it is the only compatible owned choice", () => {
+  const onlyBag = item("Bags", "Small tan leather shoulder bag", { color: "Tan" });
+  const onlyFragrance = item("Perfumes / Fragrances", "Neroli eau de parfum");
+  const result = generateGovernedRecommendations({
+    wardrobe: [...summerWardrobe().filter((entry) => classifyWardrobeRole(entry) !== "fragrance"), onlyBag, onlyFragrance],
+    context: context({ title: "Late lunch and visiting friends", notes: "Comfortable but put together", high: 90 }),
+    optionCount: 3,
+  });
+  assert.equal(result.options.length, 3);
+  assert.ok(result.options.every((option) => option.composition.bag?.id === onlyBag.id));
+  assert.ok(result.options.every((option) => option.composition.fragrance?.id === onlyFragrance.id));
+});
+
 test("hot outdoor recommendation sets contain at most one pants-based option, including cropped pants", () => {
   const result = generateGovernedRecommendations({
     wardrobe: summerWardrobe(),

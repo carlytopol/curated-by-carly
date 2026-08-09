@@ -1,5 +1,5 @@
 export const RECOMMENDATION_ENGINE_VERSION =
-  "dress-my-day-v9-distinct-footwear-and-foundations";
+  "dress-my-day-v10-set-aware-finishing-pieces";
 
 export const RECOMMENDATION_DIAGNOSTICS_FEATURE_FLAGS = {
   recommendationDiagnostics: true,

@@ -322,7 +322,7 @@ function assess(items: EngineWardrobeItem[], context: ContextEvidence, pairs: In
   };
 }
 
-function bestSupport(
+function compatibleSupports(
   candidates: EngineWardrobeItem[],
   foundation: EngineWardrobeItem[],
   context: ContextEvidence,
@@ -331,7 +331,8 @@ function bestSupport(
   return candidates
     .map((item) => ({ item, assessment: assess([...foundation, item], context, pairs) }))
     .filter(({ assessment }) => !assessment.rejectionReasons.some((reason) => !["missing-shoes"].includes(reason)))
-    .sort((left, right) => right.assessment.score - left.assessment.score)[0]?.item ?? null;
+    .sort((left, right) => right.assessment.score - left.assessment.score)
+    .map(({ item }) => item);
 }
 
 function explanation(
@@ -465,24 +466,29 @@ export function generateGovernedRecommendations(input: {
     // previous greedy single-shoe choice caused repeated footwear and hid
     // otherwise viable alternatives.
     for (const shoe of shoes) {
-      const selected = [...foundationItems, shoe];
-      let bag: EngineWardrobeItem | null = null;
-      if (input.context.bagAllowed.value !== false) {
-        bag = bestSupport(byRole("bag"), selected, input.context, pairs);
-        if (!bag && byRole("bag").length) {
-          rejectedCandidateCount += 1;
-          continue;
-        }
-        if (bag) selected.push(bag);
-      }
-      // Fragrance is a finishing support piece, not a structural garment role,
-      // but the Curated service standard includes it whenever one is eligible.
-      const fragrance = bestSupport(byRole("fragrance"), selected, input.context, pairs);
-      if (!fragrance && byRole("fragrance").length) {
+      const base = [...foundationItems, shoe];
+      const eligibleBags = byRole("bag");
+      const bagChoices: Array<EngineWardrobeItem | null> = input.context.bagAllowed.value === false
+        ? [null]
+        : eligibleBags.length
+          ? compatibleSupports(eligibleBags, base, input.context, pairs).slice(0, 3)
+          : [null];
+      if (!bagChoices.length) {
         rejectedCandidateCount += 1;
         continue;
       }
-      if (fragrance) selected.push(fragrance);
+      for (const bag of bagChoices) {
+        const withBag = bag ? [...base, bag] : base;
+        const eligibleFragrances = byRole("fragrance");
+        const fragranceChoices: Array<EngineWardrobeItem | null> = eligibleFragrances.length
+          ? compatibleSupports(eligibleFragrances, withBag, input.context, pairs).slice(0, 3)
+          : [null];
+        if (!fragranceChoices.length) {
+          rejectedCandidateCount += 1;
+          continue;
+        }
+        for (const fragrance of fragranceChoices) {
+          const selected = fragrance ? [...withBag, fragrance] : withBag;
       const composition: CompleteOutfit = {
         foundation,
         shoes: shoe,
@@ -523,37 +529,52 @@ export function generateGovernedRecommendations(input: {
         personalStyle,
         stylingBriefVersion: stylingBrief.schemaVersion,
       });
+        }
+      }
     }
   }
   candidates.sort((left, right) => right.assessment.score - left.assessment.score);
   const options: GovernedOutfit[] = [];
   const usedMain = new Set<string>();
   const usedShoes = new Set<string>();
+  const usedBags = new Set<string>();
+  const usedFragrances = new Set<string>();
   const hotOutdoorSet = ["hot", "extreme"].includes(input.context.constraintMatrix.heatSeverity) &&
     input.context.setting.value !== "indoor";
   let pantsOptionUsed = false;
   let tankOptionUsed = false;
-  for (const candidate of candidates) {
-    const mainIds = candidate.itemIds.filter((id) => {
-      const item = eligible.find((entry) => entry.id === id);
-      return item && ["top", "bottom", "one-piece"].includes(classifyWardrobeRole(item));
-    });
-    if (mainIds.some((id) => usedMain.has(id))) continue;
-    // An independent alternative must change the complete expression, not
-    // merely swap a top or bottom while repeating the same footwear anchor.
-    if (usedShoes.has(candidate.composition.shoes.id)) continue;
-    const candidateUsesPants = usesPantsFoundation(candidate.composition);
-    const candidateUsesTank = usesTankFoundation(candidate.composition);
-    if (hotOutdoorSet && candidateUsesPants && pantsOptionUsed) continue;
-    // Tanks remain eligible in heat, but cannot monopolize a multi-option edit
-    // when another complete and appropriate foundation direction qualifies.
-    if (candidateUsesTank && tankOptionUsed) continue;
-    options.push(candidate);
-    if (candidateUsesPants) pantsOptionUsed = true;
-    if (candidateUsesTank) tankOptionUsed = true;
-    mainIds.forEach((id) => usedMain.add(id));
-    usedShoes.add(candidate.composition.shoes.id);
-    if (options.length >= (input.optionCount ?? 3)) break;
+  const requestedOptions = input.optionCount ?? 3;
+  // First compose the edit with distinct finishing pieces. A second pass may
+  // reuse a bag or fragrance only when the eligible wardrobe cannot support
+  // the requested number of otherwise independent, complete looks.
+  for (const preferDistinctSupport of [true, false]) {
+    for (const candidate of candidates) {
+      const mainIds = candidate.itemIds.filter((id) => {
+        const item = eligible.find((entry) => entry.id === id);
+        return item && ["top", "bottom", "one-piece"].includes(classifyWardrobeRole(item));
+      });
+      if (mainIds.some((id) => usedMain.has(id))) continue;
+      // An independent alternative must change the complete expression, not
+      // merely swap a top or bottom while repeating the same footwear anchor.
+      if (usedShoes.has(candidate.composition.shoes.id)) continue;
+      if (preferDistinctSupport && candidate.composition.bag && usedBags.has(candidate.composition.bag.id)) continue;
+      if (preferDistinctSupport && candidate.composition.fragrance && usedFragrances.has(candidate.composition.fragrance.id)) continue;
+      const candidateUsesPants = usesPantsFoundation(candidate.composition);
+      const candidateUsesTank = usesTankFoundation(candidate.composition);
+      if (hotOutdoorSet && candidateUsesPants && pantsOptionUsed) continue;
+      // Tanks remain eligible in heat, but cannot monopolize a multi-option edit
+      // when another complete and appropriate foundation direction qualifies.
+      if (candidateUsesTank && tankOptionUsed) continue;
+      options.push(candidate);
+      if (candidateUsesPants) pantsOptionUsed = true;
+      if (candidateUsesTank) tankOptionUsed = true;
+      mainIds.forEach((id) => usedMain.add(id));
+      usedShoes.add(candidate.composition.shoes.id);
+      if (candidate.composition.bag) usedBags.add(candidate.composition.bag.id);
+      if (candidate.composition.fragrance) usedFragrances.add(candidate.composition.fragrance.id);
+      if (options.length >= requestedOptions) break;
+    }
+    if (options.length >= requestedOptions) break;
   }
   const confidence = options.length
     ? options.some((option) => option.assessment.confidence === "low")
