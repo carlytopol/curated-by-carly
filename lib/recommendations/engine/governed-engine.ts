@@ -69,6 +69,11 @@ function usesPantsFoundation(outfit: CompleteOutfit) {
   return /\b(pants?|trousers?|jeans?|leggings?|capris?|culottes?)\b/.test(bottom.text);
 }
 
+function usesTankFoundation(outfit: CompleteOutfit) {
+  if (outfit.foundation.kind === "dress-or-jumpsuit") return false;
+  return /\b(tanks?|camisoles?|shell tanks?)\b/.test(traits(outfit.foundation.top).text);
+}
+
 function hardReject(items: EngineWardrobeItem[], context: ContextEvidence, pairs: IncompatibleWardrobePair[]) {
   const reasons: string[] = [];
   const itemTraits = items.map(traits);
@@ -527,17 +532,25 @@ export function generateGovernedRecommendations(input: {
   const hotOutdoorSet = ["hot", "extreme"].includes(input.context.constraintMatrix.heatSeverity) &&
     input.context.setting.value !== "indoor";
   let pantsOptionUsed = false;
+  let tankOptionUsed = false;
   for (const candidate of candidates) {
     const mainIds = candidate.itemIds.filter((id) => {
       const item = eligible.find((entry) => entry.id === id);
       return item && ["top", "bottom", "one-piece"].includes(classifyWardrobeRole(item));
     });
     if (mainIds.some((id) => usedMain.has(id))) continue;
-    if (eventPolicyEnabled && eventPolicy.requireDistinctFootwear && usedShoes.has(candidate.composition.shoes.id)) continue;
+    // An independent alternative must change the complete expression, not
+    // merely swap a top or bottom while repeating the same footwear anchor.
+    if (usedShoes.has(candidate.composition.shoes.id)) continue;
     const candidateUsesPants = usesPantsFoundation(candidate.composition);
+    const candidateUsesTank = usesTankFoundation(candidate.composition);
     if (hotOutdoorSet && candidateUsesPants && pantsOptionUsed) continue;
+    // Tanks remain eligible in heat, but cannot monopolize a multi-option edit
+    // when another complete and appropriate foundation direction qualifies.
+    if (candidateUsesTank && tankOptionUsed) continue;
     options.push(candidate);
     if (candidateUsesPants) pantsOptionUsed = true;
+    if (candidateUsesTank) tankOptionUsed = true;
     mainIds.forEach((id) => usedMain.add(id));
     usedShoes.add(candidate.composition.shoes.id);
     if (options.length >= (input.optionCount ?? 3)) break;

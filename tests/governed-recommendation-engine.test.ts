@@ -649,6 +649,37 @@ test("three options use distinct main garments", () => {
   assert.equal(new Set(mainSets).size, 3);
 });
 
+test("ordinary social alternatives use distinct shoes", () => {
+  const result = generateGovernedRecommendations({
+    wardrobe: summerWardrobe(),
+    context: context({ title: "Late lunch and visiting friends", notes: "Comfortable but put together", high: 90 }),
+    optionCount: 3,
+  });
+  assert.equal(result.options.length, 3);
+  const shoeIds = result.options.map((option) => option.composition.shoes.id);
+  assert.equal(new Set(shoeIds).size, result.options.length);
+});
+
+test("a multi-option edit contains at most one tank direction when other foundations qualify", () => {
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      ...summerWardrobe(),
+      item("Tops", "Second ribbed scoop-neck tank top", { color: "Black", rotationScore: 100 }),
+      item("Tops", "Third low scoop tank top", { color: "Ivory", rotationScore: 98 }),
+    ],
+    context: context({ title: "Late lunch and visiting friends", notes: "Comfortable but put together", high: 90 }),
+    optionCount: 3,
+  });
+  assert.equal(result.options.length, 3);
+  const tankOptions = result.options.filter((option) =>
+    option.composition.foundation.kind === "separates" &&
+    /\b(tanks?|camisoles?|shell tanks?)\b/.test(
+      `${option.composition.foundation.top.category ?? ""} ${option.composition.foundation.top.item_name ?? ""}`.toLowerCase(),
+    ),
+  );
+  assert.ok(tankOptions.length <= 1);
+});
+
 test("hot outdoor recommendation sets contain at most one pants-based option, including cropped pants", () => {
   const result = generateGovernedRecommendations({
     wardrobe: summerWardrobe(),
