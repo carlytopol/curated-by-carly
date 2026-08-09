@@ -105,6 +105,9 @@ function structuredPockets(item: EngineWardrobeItem, value: string) {
 
 export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits {
   const value = authoritativeItemText(item);
+  const role = classifyWardrobeRole(item);
+  const occasionLaceFoundation = ["bottom", "one-piece"].includes(role) &&
+    /\b(lace.?trim|lace[- ]panel|asymmetrical[^.]{0,32}lace|lace[^.]{0,32}asymmetrical)\b/.test(value);
   const materials = [
     "cotton", "linen", "silk", "satin", "charmeuse", "suede", "leather",
     "denim", "wool", "cashmere", "fleece", "organza", "tulle", "lace",
@@ -118,7 +121,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     typeof evidenceFormality.value === "number"
   ) formality = evidenceFormality.value;
   else if (/\b(black.?tie|gala|formal|gowns?|tuxedo)\b/.test(value)) formality = 5;
-  else if (/\b(cocktail|evening|satin|silk|charmeuse|sequined?|beaded|organza|tulle)\b/.test(value)) formality = 4;
+  else if (occasionLaceFoundation || /\b(cocktail|evening|satin|silk|charmeuse|sequined?|beaded|organza|tulle)\b/.test(value)) formality = 4;
   else if (/\b(blazers?|tailored|dress shirts?|loafers?|pumps?|midi dresses?)\b/.test(value)) formality = 3;
   else if (/\b(casual|denim|chambray|tees?|tanks?|sneakers?|shorts|utility)\b/.test(value)) formality = 2;
   else if (/\b(active|athletic|sweatshirts?|hoodies?|gym|swim|cover.?ups?|kaftans?)\b/.test(value)) formality = 1;
@@ -155,12 +158,12 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     /\b(linen|gauze|mesh|sheer cotton|lightweight cotton|breathable)\b/.test(value);
   const jeans = /\bjeans?\b/.test(value);
   const heavyDenim = jeans && !/\b(lightweight|featherweight|summer weight|thin|lyocell|tencel)\b/.test(value);
-  const formalEveningwear = /\b(satin|silk|charmeuse|evening|cocktail|gala|organza|tulle|sequins?)\b/.test(value);
-  const formalBlouse = classifyWardrobeRole(item) === "top" && (
+  const formalEveningwear = occasionLaceFoundation || /\b(satin|silk|charmeuse|evening|cocktail|gala|organza|tulle|sequins?)\b/.test(value);
+  const formalBlouse = role === "top" && (
     formalEveningwear || /\b(tie.?neck|puff.?sleeves?|pleated formal|evening blouse)\b/.test(value)
   );
   return {
-    role: classifyWardrobeRole(item), text: value, materials, formality, warmth,
+    role, text: value, materials, formality, warmth,
     pattern: statement ? "statement" : solid ? "solid" : "unknown",
     blueDenim, pockets: structuredPockets(item, value), walkability, polish,
     longSleeve, heatSafeLongSleeve, jeans, heavyDenim, boots, suedeFootwear,

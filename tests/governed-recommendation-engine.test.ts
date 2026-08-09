@@ -586,6 +586,39 @@ test("individually attractive pieces are rejected when formality conflicts", () 
   assert.equal(result.options.length, 0);
 });
 
+test("an occasion lace skirt is rejected for an everyday casual-social plan", () => {
+  const skirt = item("Skirts", "Asymmetrical lace-trim skirt");
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      item("Tops", "Black one-shoulder tank top"),
+      skirt,
+      item("Shorts", "Casual cotton shorts"),
+      item("Shoes", "Leather ballet flats"),
+    ],
+    context: context({ title: "Late lunch and visiting friends", notes: "Comfortable but put together", high: 90 }),
+  });
+  const audit = result.eligibilityAudit.find((entry) => entry.itemId === skirt.id);
+  assert.ok(audit?.rejectionReasons.includes("everyday-occasionwear"));
+  assert.ok(result.options.every((option) => !option.itemIds.includes(skirt.id)));
+});
+
+test("fresh foundations displace recently repeated bottoms when alternatives qualify", () => {
+  const repeated = item("Pants", "Olive green utility pants", { rotationScore: 20 });
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      item("Tops", "Fresh cotton shell", { rotationScore: 90 }),
+      repeated,
+      item("Shorts", "Fresh tailored cotton shorts", { rotationScore: 95 }),
+      item("Skirts", "Fresh casual poplin skirt", { rotationScore: 92 }),
+      item("Shoes", "Leather ballet flats", { rotationScore: 70 }),
+    ],
+    context: context({ title: "Late lunch and visiting friends", notes: "Comfortable but put together", high: 90 }),
+    optionCount: 2,
+  });
+  assert.ok(result.options.length >= 1);
+  assert.ok(result.options.every((option) => !option.itemIds.includes(repeated.id)));
+});
+
 test("no valid outfit returns an honest no-recommendation result", () => {
   const result = generateGovernedRecommendations({
     wardrobe: [item("Tops", "Cotton top")],

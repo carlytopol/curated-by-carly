@@ -31,10 +31,11 @@ import type {
   OutfitFactor,
 } from "./types";
 import { postureItemPriority } from "./dressing-posture";
+import { preferFreshMainItems } from "../rotation";
 
 const WEIGHTS: Record<OutfitFactor, number> = {
   occasion: 18, weather: 15, comfort: 14, cohesion: 13, completeness: 13,
-  intent: 12, fit: 10, color: 7, polish: 12, rotation: 5, utility: 3,
+  intent: 12, fit: 10, color: 7, polish: 12, rotation: 15, utility: 3,
 };
 
 function hasAuthoritativeUserExclusion(item: EngineWardrobeItem) {
@@ -406,12 +407,17 @@ export function generateGovernedRecommendations(input: {
     (!eventPolicyEnabled || auditById.get(item.id)?.eligible) &&
     itemStyleEligibility(item, stylingBrief).eligible
   );
-  const byRole = (wanted: Role) => eligible
-    .filter((item) => classifyWardrobeRole(item) === wanted)
-    .sort((left, right) =>
+  const byRole = (wanted: Role) => {
+    const ranked = eligible
+      .filter((item) => classifyWardrobeRole(item) === wanted)
+      .sort((left, right) =>
       postureItemPriority(left, input.context.dressingPosture) -
       postureItemPriority(right, input.context.dressingPosture)
-    );
+      );
+    return ["top", "bottom", "one-piece"].includes(wanted)
+      ? preferFreshMainItems(ranked, new Date(), 2)
+      : ranked;
+  };
   // Keep this interactive request bounded while preserving the wardrobe's
   // existing rotation and personal-style ordering.
   const MAX_ONE_PIECES = 16;

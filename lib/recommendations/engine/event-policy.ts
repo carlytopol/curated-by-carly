@@ -153,6 +153,13 @@ export function auditItemEligibility(
     `This day permits formality through level ${context.dressingPosture.formalityCeiling}; this piece is level ${traits.formality ?? "unknown"}.`,
   );
   reject(
+    "everyday-occasionwear",
+    context.dressingPosture.archetype === "everyday-casual-social" &&
+      foundationRole &&
+      (traits.formalEveningwear || (traits.formality ?? 0) >= 4),
+    "Occasion and formal foundation pieces are not eligible for an everyday casual-social plan.",
+  );
+  reject(
     "everyday-formal-footwear",
     context.dressingPosture.archetype === "everyday-casual-social" &&
       traits.role === "shoes" &&
