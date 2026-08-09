@@ -74,6 +74,13 @@ export type StyleProfileSnapshot = {
   updatedAt: string;
 };
 
+export type ProfileNotesInput = {
+  styleNotes?: string | null;
+  fitNotes?: string | null;
+  proportions?: string | null;
+  updatedAt?: string | null;
+};
+
 export type ResolvedStyleProfile = {
   ownerUserId: string | null;
   version: string | null;
@@ -339,6 +346,95 @@ export function toEngineStyleProfile(profile: FeatureStyleProfile): StyleProfile
     status: preferences.length ? "active" : "empty",
     preferences,
     updatedAt: new Date().toISOString(),
+  };
+}
+
+const PROFILE_NOTE_TERMS: Array<{
+  value: string;
+  pattern: RegExp;
+  dimension: StylePreferenceDimension;
+  garmentRoles?: string[];
+}> = [
+  { value: "defined waist", pattern: /\bdefined waist|waist definition|cinched waist\b/, dimension: "fit" },
+  { value: "high-rise", pattern: /\bhigh[- ](?:rise|waisted)\b/, dimension: "fit", garmentRoles: ["bottom"] },
+  { value: "wide-leg", pattern: /\bwide[- ]leg\b/, dimension: "silhouette", garmentRoles: ["bottom"] },
+  { value: "straight-leg", pattern: /\bstraight[- ]leg\b/, dimension: "silhouette", garmentRoles: ["bottom"] },
+  { value: "a-line", pattern: /\ba[- ]line\b/, dimension: "silhouette" },
+  { value: "bodycon", pattern: /\bbodycon|body[- ]conscious\b/, dimension: "fit" },
+  { value: "oversized", pattern: /\boversized|oversize\b/, dimension: "fit" },
+  { value: "tailored", pattern: /\btailored|structured\b/, dimension: "fit" },
+  { value: "relaxed", pattern: /\brelaxed|loose[- ]fit\b/, dimension: "fit" },
+  { value: "tank", pattern: /\btanks?|camisoles?\b/, dimension: "garment-role", garmentRoles: ["top"] },
+  { value: "jeans", pattern: /\bjeans?|denim pants?\b/, dimension: "garment-role", garmentRoles: ["bottom"] },
+  { value: "shorts", pattern: /\bshorts\b/, dimension: "garment-role", garmentRoles: ["bottom"] },
+  { value: "skirts", pattern: /\bskirts?\b/, dimension: "garment-role", garmentRoles: ["bottom"] },
+  { value: "dresses", pattern: /\bdresses?\b/, dimension: "garment-role", garmentRoles: ["one-piece"] },
+  { value: "heels", pattern: /\bheels?|pumps?|stilettos?\b/, dimension: "footwear", garmentRoles: ["shoes"] },
+  { value: "flats", pattern: /\bflats?|flat shoes?\b/, dimension: "footwear", garmentRoles: ["shoes"] },
+  { value: "linen", pattern: /\blinen\b/, dimension: "material" },
+  { value: "cotton", pattern: /\bcotton\b/, dimension: "material" },
+  { value: "silk", pattern: /\bsilk\b/, dimension: "material" },
+  { value: "polished", pattern: /\bpolished|put together\b/, dimension: "aesthetic" },
+  { value: "classic", pattern: /\bclassic|timeless\b/, dimension: "aesthetic" },
+  { value: "expressive", pattern: /\bexpressive|playful|creative\b/, dimension: "aesthetic" },
+];
+
+function notePolarity(text: string, matchIndex: number) {
+  const nearby = text.slice(Math.max(0, matchIndex - 64), matchIndex);
+  const prefix = nearby.split(/[.;!?]/).at(-1) ?? nearby;
+  return /\b(?:avoid|never|no|not|dislike|hate|don['’]?t|do not|cannot|can['’]?t)\b/.test(prefix)
+    ? "avoid" as const
+    : "prefer" as const;
+}
+
+/** Converts only recognized customer-authored Profile language into traceable directives. */
+export function withProfileNotes(
+  snapshot: StyleProfileSnapshot,
+  userId: string,
+  input: ProfileNotesInput | null | undefined,
+): StyleProfileSnapshot {
+  if (!input || snapshot.userId !== userId) return snapshot;
+  const recordedAt = input.updatedAt || snapshot.updatedAt;
+  const sources = [
+    ["style", input.styleNotes],
+    ["fit", input.fitNotes],
+    ["proportions", input.proportions],
+  ] as const;
+  const preferences: StylePreference[] = [];
+  for (const [source, raw] of sources) {
+    const text = raw?.trim().toLowerCase();
+    if (!text) continue;
+    for (const term of PROFILE_NOTE_TERMS) {
+      const match = term.pattern.exec(text);
+      if (!match) continue;
+      const polarity = notePolarity(text, match.index);
+      preferences.push({
+        id: `profile-note:${source}:${term.value}`,
+        subject: `profile-note:${source}`,
+        questionId: null,
+        dimension: term.dimension,
+        value: term.value,
+        polarity,
+        rank: null,
+        garmentRoles: [...(term.garmentRoles ?? [])],
+        occasions: [],
+        scope: { source },
+        provenance: "profile-edit",
+        authority: "explicit-confirmed",
+        confidence: "high",
+        recordedAt,
+      });
+    }
+  }
+  if (!preferences.length) return snapshot;
+  const priorIds = new Set(snapshot.preferences.map((preference) => preference.id));
+  const additions = preferences.filter((preference) => !priorIds.has(preference.id));
+  return {
+    ...snapshot,
+    version: `${snapshot.version}|profile-notes:${recordedAt}`,
+    status: "active",
+    preferences: [...snapshot.preferences, ...additions],
+    updatedAt: recordedAt,
   };
 }
 

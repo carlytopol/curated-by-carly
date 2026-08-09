@@ -13,6 +13,7 @@ import {
   interpretPersonalStyle,
   PERSONAL_STYLING_BRIEF_VERSION,
   resolveStyleProfile,
+  withProfileNotes,
   type StylePreference,
   type StyleProfileSnapshot,
 } from "@/lib/recommendations/engine/style-profile";
@@ -121,6 +122,31 @@ test("supplying no Style Profile leaves recommendation behavior neutral", () => 
   });
   assert.equal(result.styleProfile.status, "not-provided");
   assert.equal(result.styleProfile.preferences.length, 0);
+});
+
+test("confirmed free-form Profile notes guide initial outfit eligibility and ranking", () => {
+  const base = profile("user-profile-notes", []);
+  const enriched = withProfileNotes(base, "user-profile-notes", {
+    styleNotes: "I don't want tank tops. I prefer tailored, polished clothes.",
+    fitNotes: "I like a defined waist.",
+    proportions: "Long torso.",
+    updatedAt: "2026-08-09T12:00:00.000Z",
+  });
+  const tank = item("Tops", "Ribbed scoop-neck tank top");
+  const result = generateGovernedRecommendations({
+    userId: "user-profile-notes",
+    styleProfile: enriched,
+    wardrobe: [
+      tank,
+      item("Tops", "Tailored cotton short-sleeve blouse"),
+      item("Shorts", "Tailored cotton shorts"),
+      item("Shoes", "Leather ballet flats"),
+    ],
+    context: context({ title: "Late lunch with friends", high: 88 }),
+  });
+  assert.ok(enriched.preferences.some((entry) => entry.value === "tank" && entry.polarity === "avoid"));
+  assert.ok(enriched.preferences.some((entry) => entry.value === "tailored" && entry.polarity === "prefer"));
+  assert.ok(result.options.every((option) => !option.itemIds.includes(tank.id)));
 });
 
 test("school volunteering establishes an approachable practical posture before garments are considered", () => {
