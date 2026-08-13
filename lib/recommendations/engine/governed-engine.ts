@@ -431,6 +431,7 @@ export function generateGovernedRecommendations(input: {
   const MAX_TOPS = 12;
   const MAX_BOTTOMS = 12;
   const MAX_SHOES = 32;
+  const MAX_COMPATIBLE_SHOES_PER_FOUNDATION = 8;
   // Role pools are immutable within a request. Resolve and sort them once;
   // rebuilding them inside the candidate loops made broad wardrobes slow
   // enough to exceed the client response budget.
@@ -463,7 +464,16 @@ export function generateGovernedRecommendations(input: {
     const foundationItems = foundation.kind === "dress-or-jumpsuit"
       ? [foundation.onePiece]
       : [foundation.top, foundation.bottom];
-    const shoes = shoeCandidates;
+    // Inspect the deeper footwear pool, then fully compose only its strongest
+    // compatible members for this foundation. This preserves deep retrieval
+    // when early shoes fail while preventing every shoe from multiplying into
+    // every bag and fragrance direction.
+    const shoes = compatibleSupports(
+      shoeCandidates,
+      foundationItems,
+      input.context,
+      pairs,
+    ).slice(0, MAX_COMPATIBLE_SHOES_PER_FOUNDATION);
     if (!shoes.length) {
       // Preserve observable evidence for candidates rejected before a complete
       // outfit can be assembled. Previously this early exit made production
@@ -513,7 +523,6 @@ export function generateGovernedRecommendations(input: {
       const policyReview = eventPolicyEnabled
         ? validateOutfitAgainstEventPolicy(composition, input.context, eventPolicy)
         : { valid: true, rejectionReasons: [] };
-      const trace = traceOutfitValidation(editorial.items, input.context, pairs);
       const assessment = assess(editorial.items, input.context, pairs);
       const personalStyle = assessPersonalStyle(editorial.items, stylingBrief);
       const editorialStyle = editorialStyleValidate(personalStyle, stylingBrief);
@@ -524,17 +533,19 @@ export function generateGovernedRecommendations(input: {
       ])];
       const valid = assessment.valid && policyReview.valid && editorialStyle.rejectionReasons.length === 0;
       const governedScore = assessment.score + personalStyle.score;
-      trace.finalScore = governedScore;
-      trace.approved = valid;
-      trace.rejectionReasons = rejectionReasons;
       // Keep diagnostics observable without carrying every valid and rejected
       // member of the bounded search into persistence. Production wardrobes
       // can still yield thousands of traces even when only three outfits are
       // surfaced; retaining that payload delayed an otherwise successful edit
       // beyond the browser response budget.
-      if (!valid && diagnostics.length < 120) diagnostics.push(trace);
+      if (diagnostics.length < 120) {
+        const trace = traceOutfitValidation(editorial.items, input.context, pairs);
+        trace.finalScore = governedScore;
+        trace.approved = valid;
+        trace.rejectionReasons = rejectionReasons;
+        diagnostics.push(trace);
+      }
       if (!valid) { rejectedCandidateCount += 1; continue; }
-      if (diagnostics.length < 120) diagnostics.push(trace);
       candidates.push({
         itemIds: editorial.items.map((item) => item.id),
         composition,

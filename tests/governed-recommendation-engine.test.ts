@@ -1387,5 +1387,5 @@ test("a broad wardrobe finds three options inside the interactive compute budget
   const elapsedMs = performance.now() - startedAt;
   assert.equal(result.options.length, 3);
   assert.ok(result.diagnostics.length <= 120);
-  assert.ok(elapsedMs < 5_000, `Broad wardrobe generation took ${elapsedMs.toFixed(0)}ms`);
+  assert.ok(elapsedMs < 2_000, `Broad wardrobe generation took ${elapsedMs.toFixed(0)}ms`);
 });
