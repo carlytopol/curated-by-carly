@@ -1327,10 +1327,15 @@ export function TodayWorkspace({ embedded = false }: { embedded?: boolean }) {
           </section>
         </div>
       {wearReview && (
-        <div className={styles.modalBackdrop} role="presentation">
-          <section className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="wear-review-title">
+        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !markingWornId) setWearReview(null);
+        }}>
+          <section className={styles.sheet} role="dialog" aria-modal="true" aria-labelledby="wear-review-title" onMouseDown={(event) => event.stopPropagation()}>
            <div className={styles.sheetInner}>
-            <p className={styles.rubric}>A final look</p>
+            <div className="flex items-center justify-between gap-4">
+              <p className={styles.rubric}>A final look</p>
+              <button type="button" aria-label="Close wear review" className={styles.textAction} disabled={Boolean(markingWornId)} onClick={() => setWearReview(null)}>Close</button>
+            </div>
             <h2 ref={wearReviewHeadingRef} tabIndex={-1} id="wear-review-title" className={styles.sectionTitle}>Confirm what you wore</h2>
             <p className={styles.eventText}>Remove anything you changed, then choose whether each piece is available again or ready for laundry. Nothing changes until you save.</p>
             <p className={styles.morningNote}>{wearReview.summary}</p>
