@@ -8,6 +8,7 @@ import { classifyOccasion, inferDressCode } from "@/lib/daily-agenda/classify";
 import { buildContextEvidence } from "@/lib/recommendations/engine/context-evidence";
 import { generateGovernedRecommendations } from "@/lib/recommendations/engine/governed-engine";
 import { researchVenue } from "@/lib/recommendations/engine/venue-research";
+import { resolveExplicitlyRequestedItemIds } from "@/lib/recommendations/engine/explicit-item-request";
 import { wardrobeItemLabel } from "@/lib/wardrobe/item-label";
 import type { DailyAgendaItem } from "@/types/daily-agenda";
 import { resolveFeatureStyleProfile } from "@/lib/data/style-profile";
@@ -197,6 +198,7 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
       incompatiblePairs,
       optionCount: 3,
       eventPolicyEnabled: true,
+      requiredItemIds: resolveExplicitlyRequestedItemIds(rankedCloset, [event.notes, intention].filter(Boolean).join(". ")),
     });
     const itemLabels = new Map(
       rankedCloset.map((item) => [item.id, wardrobeItemLabel(item)]),

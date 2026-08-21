@@ -80,7 +80,7 @@ export function classifyWardrobeRole(item: EngineWardrobeItem): NormalizedWardro
   if (/perfumes?|fragrances?|colognes?|scent/.test(`${category} ${value}`)) return "fragrance";
   if (/\b(shoes?|sneakers?|sandals?|flats?|loafers?|boots?|heels?|pumps?|slides?|court shoes?)\b/.test(`${category} ${value}`)) return "shoes";
   if (/\b(handbags?|bags?|totes?|clutches?|purses?)\b/.test(`${category} ${value}`)) return "bag";
-  if (/\b(jewelry|jewellery|watches?|necklaces?|earrings?|bracelets?|rings?|accessories?)\b/.test(`${category} ${value}`)) return "accessory";
+  if (/\b(jewelry|jewellery|watches?|necklaces?|earrings?|bracelets?|rings?|accessories?|hats?|caps?|headwear)\b/.test(`${category} ${value}`)) return "accessory";
   if (/\b(outerwear|coats?|jackets?|blazers?)\b/.test(`${category} ${value}`)) return "layer";
   if (/\b(dresses?|gowns?|jumpsuits?|rompers?|one-piece)\b/.test(value) || /\b(dresses|jumpsuits)\b/.test(category)) return "one-piece";
   // Tops resolve before bottoms so “short-sleeve” is never read as “shorts.”

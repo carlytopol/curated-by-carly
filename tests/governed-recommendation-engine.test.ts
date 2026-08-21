@@ -7,6 +7,7 @@ import {
   traceOutfitValidation,
 } from "@/lib/recommendations/engine/governed-engine";
 import { auditItemEligibility, buildEventPolicy } from "@/lib/recommendations/engine/event-policy";
+import { resolveExplicitlyRequestedItemIds } from "@/lib/recommendations/engine/explicit-item-request";
 import type { EngineWardrobeItem, VenueRule } from "@/lib/recommendations/engine/types";
 import {
   buildWardrobeEvidenceSummary,
@@ -1388,4 +1389,50 @@ test("a broad wardrobe finds three options inside the interactive compute budget
   assert.equal(result.options.length, 3);
   assert.ok(result.diagnostics.length <= 120);
   assert.ok(elapsedMs < 2_000, `Broad wardrobe generation took ${elapsedMs.toFixed(0)}ms`);
+});
+
+test("an explicitly requested owned hat is included in every surfaced option", () => {
+  const hat = item("Hats", "Kemo Sabe western felt hat", { designer: "Kemo Sabe" });
+  const wardrobe = [
+    hat,
+    ...Array.from({ length: 3 }, (_, index) => item("Tops", `Cotton country shirt ${index + 1}`)),
+    ...Array.from({ length: 3 }, (_, index) => item("Shorts", `Denim shorts ${index + 1}`)),
+    ...Array.from({ length: 3 }, (_, index) => item("Shoes", `Leather walking sneaker ${index + 1}`)),
+    item("Handbags", "Clear stadium crossbody bag"),
+    item("Perfumes / Fragrances", "Warm woody fragrance"),
+  ];
+  const requested = resolveExplicitlyRequestedItemIds(
+    wardrobe,
+    "I want a country but polished feel and I want to wear my Kemo Sabe hat.",
+  );
+  assert.deepEqual(requested, [hat.id]);
+  const result = generateGovernedRecommendations({
+    wardrobe,
+    context: context({ title: "Country concert at Mercedes-Benz Stadium", high: 84 }),
+    requiredItemIds: requested,
+    optionCount: 3,
+  });
+  assert.equal(result.options.length, 3);
+  assert.ok(result.options.every((option) => option.itemIds.includes(hat.id)));
+});
+
+test("a verified clear-bag stadium policy rejects ordinary handbags", () => {
+  const venueRules: VenueRule[] = [{
+    kind: "bag-policy",
+    statement: "Clear stadium bags only.",
+    effect: "clear-bag-only",
+    sourceUrl: "https://www.mercedesbenzstadium.com/guidelines",
+    retrievedAt: "2026-08-21T12:00:00.000Z",
+    confidence: "high",
+  }];
+  const evidence = context({
+    title: "Country concert at Mercedes-Benz Stadium",
+    location: "Mercedes-Benz Stadium",
+    high: 84,
+    venueRules,
+  });
+  const ordinary = auditItemEligibility(item("Handbags", "Quilted leather shoulder bag"), evidence);
+  const clear = auditItemEligibility(item("Handbags", "Clear stadium-approved crossbody bag"), evidence);
+  assert.ok(ordinary.rejectionReasons.includes("stadium-bag-policy"));
+  assert.equal(clear.eligible, true);
 });

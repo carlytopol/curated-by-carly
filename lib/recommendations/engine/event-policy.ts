@@ -232,6 +232,12 @@ export function auditItemEligibility(
   if (context.bagAllowed.value === false) {
     reject("no-bag", traits.role === "bag", "The user or verified venue policy does not permit a bag.");
   }
+  const clearBagPolicy = context.venueRules.some((rule) => rule.kind === "bag-policy" && rule.effect === "clear-bag-only");
+  reject(
+    "stadium-bag-policy",
+    clearBagPolicy && traits.role === "bag" && !/\b(clear|transparent|stadium.?approved)\b/.test(traits.text),
+    "This venue permits only a verified clear or otherwise dimension-compliant stadium bag; an ordinary handbag cannot be assumed compliant.",
+  );
   const hardCodes = new Set(policy.hardConstraints);
   reject("user-no-jeans", hardCodes.has("user-no-jeans") && traits.jeans, "The user excluded jeans.");
   reject("user-no-long-sleeves", hardCodes.has("user-no-long-sleeves") && traits.longSleeve, "The user excluded long sleeves.");

@@ -66,7 +66,7 @@ export function buildContextEvidence(input: {
       : evidence<"indoor" | "outdoor" | "mixed">(null, "unknown", "low", "not supplied");
 
   const userNoBag = contains(combined, /\b(no bag|cannot carry a bag|can't carry a bag|can’t carry a bag|without a bag|bags? (?:are )?(?:not allowed|prohibited))\b/);
-  const verifiedBagRule = venueRules.find((rule) => rule.kind === "bag-policy" && (rule.effect === "no-bag" || rule.effect === "small-bag-only"));
+  const verifiedBagRule = venueRules.find((rule) => rule.kind === "bag-policy" && ["no-bag", "small-bag-only", "clear-bag-only"].includes(rule.effect));
   const bagAllowed = userNoBag
     ? evidence(false, "user", "high", "user notes")
     : verifiedBagRule

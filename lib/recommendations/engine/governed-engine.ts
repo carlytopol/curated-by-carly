@@ -372,6 +372,7 @@ export function generateGovernedRecommendations(input: {
   incompatiblePairs?: IncompatibleWardrobePair[];
   optionCount?: number;
   eventPolicyEnabled?: boolean;
+  requiredItemIds?: string[];
 }): GovernedRecommendationResult {
   // Resolve and interpret once per request. The resulting immutable brief is
   // carried through eligibility, whole-outfit cohesion, editorial review, and
@@ -441,6 +442,13 @@ export function generateGovernedRecommendations(input: {
   const shoeCandidates = byRole("shoes").slice(0, MAX_SHOES);
   const bagCandidates = byRole("bag");
   const fragranceCandidates = byRole("fragrance");
+  const requiredItems = (input.requiredItemIds ?? []).flatMap((itemId) => {
+    const item = input.wardrobe.find((candidate) => candidate.id === itemId);
+    return item ? [item] : [];
+  });
+  const requiredAccessories = requiredItems.filter((item) =>
+    eligible.some((candidate) => candidate.id === item.id) && classifyWardrobeRole(item) === "accessory"
+  );
   const onePieceFoundations: CompleteOutfit["foundation"][] = onePieceCandidates
     .slice(0, MAX_ONE_PIECES)
     .map((onePiece): CompleteOutfit["foundation"] => ({
@@ -516,7 +524,7 @@ export function generateGovernedRecommendations(input: {
         shoes: shoe,
         bag,
         outerLayer: null,
-        jewelry: [],
+        jewelry: requiredAccessories,
         fragrance,
       };
       const editorial = assembleAndValidateStructure(composition, input.context, pairs);
@@ -532,6 +540,10 @@ export function generateGovernedRecommendations(input: {
         ...editorialStyle.rejectionReasons,
       ])];
       const valid = assessment.valid && policyReview.valid && editorialStyle.rejectionReasons.length === 0;
+      if (requiredItems.some((required) => !editorial.items.some((item) => item.id === required.id))) {
+        rejectionReasons.push("missing-explicitly-requested-item");
+      }
+      const fullyHonorsRequiredItems = !rejectionReasons.includes("missing-explicitly-requested-item");
       const governedScore = assessment.score + personalStyle.score;
       // Keep diagnostics observable without carrying every valid and rejected
       // member of the bounded search into persistence. Production wardrobes
@@ -541,11 +553,11 @@ export function generateGovernedRecommendations(input: {
       if (diagnostics.length < 120) {
         const trace = traceOutfitValidation(editorial.items, input.context, pairs);
         trace.finalScore = governedScore;
-        trace.approved = valid;
+        trace.approved = valid && fullyHonorsRequiredItems;
         trace.rejectionReasons = rejectionReasons;
         diagnostics.push(trace);
       }
-      if (!valid) { rejectedCandidateCount += 1; continue; }
+      if (!valid || !fullyHonorsRequiredItems) { rejectedCandidateCount += 1; continue; }
       candidates.push({
         itemIds: editorial.items.map((item) => item.id),
         composition,
