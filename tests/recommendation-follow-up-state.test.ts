@@ -166,6 +166,13 @@ test("asking to see rebuilt options in chat regenerates without polluting stylin
   assert.equal(eventCorrectionFromQuestion(request), null);
 });
 
+test("an explicit regenerate command replaces displayed recommendations", () => {
+  assert.equal(
+    followUpRequiresNewOutfits("Please regenerate this existing plan with my requested hat."),
+    true,
+  );
+});
+
 test("rebuilt outfits are rendered as visible chat options", () => {
   const answer = formatRegeneratedOptionsForChat([
     {
