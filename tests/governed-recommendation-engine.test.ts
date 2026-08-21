@@ -8,6 +8,7 @@ import {
 } from "@/lib/recommendations/engine/governed-engine";
 import { auditItemEligibility, buildEventPolicy } from "@/lib/recommendations/engine/event-policy";
 import { resolveExplicitlyRequestedItemIds } from "@/lib/recommendations/engine/explicit-item-request";
+import { researchVenue } from "@/lib/recommendations/engine/venue-research";
 import type { EngineWardrobeItem, VenueRule } from "@/lib/recommendations/engine/types";
 import {
   buildWardrobeEvidenceSummary,
@@ -1416,6 +1417,18 @@ test("an explicitly requested owned hat is included in every surfaced option", (
   assert.ok(result.options.every((option) => option.itemIds.includes(hat.id)));
 });
 
+test("a regenerated must-include correction still resolves the owned hat", () => {
+  const hat = item("Accessories", "Rust brown wide-brim felt hat with feather trim", {
+    designer: "Kemo Sabe",
+    subcategory: "Hats",
+  });
+  const requested = resolveExplicitlyRequestedItemIds(
+    [hat],
+    "Every option must include my Kemo Sabe hat, express a country but polished direction.",
+  );
+  assert.deepEqual(requested, [hat.id]);
+});
+
 test("a verified clear-bag stadium policy rejects ordinary handbags", () => {
   const venueRules: VenueRule[] = [{
     kind: "bag-policy",
@@ -1435,4 +1448,13 @@ test("a verified clear-bag stadium policy rejects ordinary handbags", () => {
   const clear = auditItemEligibility(item("Handbags", "Clear stadium-approved crossbody bag"), evidence);
   assert.ok(ordinary.rejectionReasons.includes("stadium-bag-policy"));
   assert.equal(clear.eligible, true);
+});
+
+test("Mercedes-Benz Stadium policy remains fail-closed when live research is unavailable", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => {
+    throw new Error("offline");
+  });
+  const rules = await researchVenue("Mercedes-Benz Stadium", new Date("2026-08-21T12:00:00.000Z"));
+  assert.equal(rules[0]?.effect, "clear-bag-only");
+  assert.equal(rules[0]?.sourceUrl, "https://www.mercedesbenzstadium.com/guidelines");
 });

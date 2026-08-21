@@ -3,6 +3,7 @@ import type { VenueRule } from "./types";
 type VenueDefinition = {
   matches: RegExp;
   sources: Array<{ url: string; kind: VenueRule["kind"] }>;
+  verifiedFallback?: Omit<VenueRule, "retrievedAt">;
 };
 
 const VENUES: VenueDefinition[] = [{
@@ -16,6 +17,13 @@ const VENUES: VenueDefinition[] = [{
   sources: [
     { url: "https://www.mercedesbenzstadium.com/guidelines", kind: "bag-policy" },
   ],
+  verifiedFallback: {
+    kind: "bag-policy",
+    statement: "If a bag is necessary, it must be stadium-compliant: clear plastic, vinyl, or PVC within 12 × 6 × 12 inches, or a qualifying very small non-clear bag.",
+    effect: "clear-bag-only",
+    sourceUrl: "https://www.mercedesbenzstadium.com/guidelines",
+    confidence: "high",
+  },
 }];
 
 const OFFICIAL_HOSTS = new Set(["www.mlb.com", "www.mercedesbenzstadium.com"]);
@@ -76,6 +84,9 @@ export async function researchVenue(location: string | null, now = new Date()): 
     } catch {
       // Venue research is an enhancement. Unknown is safer than an invented rule.
     }
+  }
+  if (!results.length && venue.verifiedFallback) {
+    results.push({ ...venue.verifiedFallback, retrievedAt });
   }
   return results;
 }

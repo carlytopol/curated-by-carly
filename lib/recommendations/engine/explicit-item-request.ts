@@ -20,7 +20,7 @@ export function resolveExplicitlyRequestedItemIds(
   text: string | null | undefined,
 ) {
   if (!text) return [];
-  const requests = [...text.matchAll(/\b(?:i\s+)?(?:want|need|plan|would like)\s+to\s+wear\s+(?:my\s+)?([^.!?;,]+)/gi)]
+  const requests = [...text.matchAll(/\b(?:(?:i\s+)?(?:want|need|plan|would like)\s+to\s+wear|(?:every\s+(?:option|outfit|look)\s+)?must\s+include|(?:please\s+)?include)\s+(?:my\s+)?([^.!?;,]+)/gi)]
     .map((match) => normalized(match[1]))
     .filter(Boolean);
   if (!requests.length) return [];
