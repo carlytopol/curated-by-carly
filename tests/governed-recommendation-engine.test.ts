@@ -647,6 +647,71 @@ test("fresh foundations displace recently repeated bottoms when alternatives qua
   assert.ok(result.options.every((option) => !option.itemIds.includes(repeated.id)));
 });
 
+test("recently repeated scoop-neck tops do not lead when fresh complete directions qualify", () => {
+  const recent = new Date().toISOString();
+  const repeatedTank = item("Tops", "GAP black scoop-neck tank top", {
+    rotationScore: 100,
+    lastRecommendedAt: recent,
+  });
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      repeatedTank,
+      item("Tops", "Tailored silk short-sleeve blouse", { rotationScore: 70 }),
+      item("Tops", "Tailored cotton wrap top", { rotationScore: 68 }),
+      item("Dresses", "Tailored cotton day dress", { rotationScore: 72 }),
+      item("Skirts", "Tailored cotton midi skirt", { rotationScore: 70 }),
+      item("Pants", "Lightweight tailored trousers", { rotationScore: 70 }),
+      item("Shoes", "Leather block-heel sandals"),
+      item("Shoes", "Kitten heel pumps"),
+    ],
+    context: context({ title: "Dinner with friends", notes: "I want to be dressy but not formal and wear heels", high: 82 }),
+    optionCount: 2,
+  });
+  assert.equal(result.options.length, 2);
+  assert.ok(result.options.every((option) => !option.itemIds.includes(repeatedTank.id)));
+});
+
+test("dressy but not formal with heels rejects casual foundations and flat shoes", () => {
+  const evidence = context({
+    title: "Dinner with friends",
+    notes: "I want to wear heels and be dress- but not formal",
+    high: 82,
+  });
+  assert.equal(evidence.dressingPosture.formalityFloor, 3);
+  assert.equal(evidence.dressingPosture.formalityCeiling, 4);
+  assert.ok(evidence.constraintMatrix.hard.some((entry) => entry.code === "user-requires-heels"));
+
+  const casualTank = item("Tops", "GAP black scoop-neck tank top");
+  const jeans = item("Jeans", "Cream straight-leg jeans");
+  const flats = item("Shoes", "Metallic leather loafers");
+  const unverifiedDayDress = item("Dresses", "White linen midi dress");
+  for (const garment of [casualTank, jeans]) {
+    assert.ok(auditItemEligibility(garment, evidence).rejectionReasons.includes("below-formality-floor"));
+  }
+  assert.ok(auditItemEligibility(flats, evidence).rejectionReasons.includes("user-required-heels"));
+  assert.ok(auditItemEligibility(unverifiedDayDress, evidence).rejectionReasons.includes("unverified-formality-floor"));
+
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      casualTank,
+      jeans,
+      flats,
+      unverifiedDayDress,
+      item("Dresses", "Silk cocktail gala dress"),
+      item("Tops", "Tailored silk short-sleeve blouse"),
+      item("Skirts", "Tailored midi skirt"),
+      item("Shoes", "Leather block-heel sandals"),
+    ],
+    context: evidence,
+  });
+  assert.equal(result.options.length, 1);
+  const option = result.options[0];
+  assert.ok(!option.itemIds.includes(casualTank.id));
+  assert.ok(!option.itemIds.includes(jeans.id));
+  assert.ok(!option.itemIds.includes(flats.id));
+  assert.match(option.composition.shoes.item_name ?? "", /heel/i);
+});
+
 test("no valid outfit returns an honest no-recommendation result", () => {
   const result = generateGovernedRecommendations({
     wardrobe: [item("Tops", "Cotton top")],

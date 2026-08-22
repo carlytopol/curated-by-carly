@@ -74,6 +74,19 @@ function usesTankFoundation(outfit: CompleteOutfit) {
   return /\b(tanks?|camisoles?|shell tanks?)\b/.test(traits(outfit.foundation.top).text);
 }
 
+function usesRecentlyRecommendedMain(outfit: CompleteOutfit, now = new Date()) {
+  const main = outfit.foundation.kind === "dress-or-jumpsuit"
+    ? [outfit.foundation.onePiece]
+    : [outfit.foundation.top, outfit.foundation.bottom];
+  const cutoff = now.getTime() - 5 * 24 * 60 * 60 * 1000;
+  return main.some((item) => {
+    const timestamp = item.lastRecommendedAt ?? item.last_recommended_at;
+    if (!timestamp) return false;
+    const value = new Date(timestamp).getTime();
+    return Number.isFinite(value) && value >= cutoff;
+  });
+}
+
 function hardReject(items: EngineWardrobeItem[], context: ContextEvidence, pairs: IncompatibleWardrobePair[]) {
   const reasons: string[] = [];
   const itemTraits = items.map(traits);
@@ -132,16 +145,23 @@ function hardReject(items: EngineWardrobeItem[], context: ContextEvidence, pairs
   if (formalities.some((value) => value > context.dressingPosture.formalityCeiling)) {
     reasons.push("above-formality-ceiling");
   }
+  if (formalities.some((value) => value < context.dressingPosture.formalityFloor)) {
+    reasons.push("below-formality-floor");
+  }
+  if (context.dressingPosture.formalityFloor >= 3 && formalities.length < foundation.length) {
+    reasons.push("unverified-formality-floor");
+  }
   const allText = foundation.map((value) => value.text).join(" ");
   const waterOccasion = /\b(beach|pool|swim|cabana)\b/i.test(`${context.agendaItem.title} ${context.userNotes.value || ""}`);
   if (!waterOccasion && /\b(cover.?up|swim cover|bathing|kaftan)\b/.test(allText)) reasons.push("swim-only-item");
   const hardCodes = new Set(matrix.hard.map((entry) => entry.code));
+  const shoe = itemTraits.find((value) => value.role === "shoes");
   if (hardCodes.has("user-no-jeans") && itemTraits.some((value) => value.jeans)) reasons.push("user-no-jeans");
   if (hardCodes.has("user-no-long-sleeves") && itemTraits.some((value) => value.longSleeve)) reasons.push("user-no-long-sleeves");
   if (hardCodes.has("user-no-slides") && itemTraits.some((value) => /\bslide\b/.test(value.text))) reasons.push("user-no-slides");
   if (hardCodes.has("user-no-boots") && itemTraits.some((value) => value.boots)) reasons.push("user-no-boots");
+  if (hardCodes.has("user-requires-heels") && (!shoe || !shoe.heel)) reasons.push("user-required-heels");
   const requestedPolish = matrix.requestedPolish;
-  const shoe = itemTraits.find((value) => value.role === "shoes");
   if ((requestedPolish === "polished" || requestedPolish === "polished-casual") && shoe?.casualSlides) {
     reasons.push("insufficient-whole-outfit-polish");
   }
@@ -570,7 +590,11 @@ export function generateGovernedRecommendations(input: {
       }
     }
   }
-  candidates.sort((left, right) => right.assessment.score - left.assessment.score);
+  candidates.sort((left, right) => {
+    const rotationDifference = Number(usesRecentlyRecommendedMain(left.composition)) -
+      Number(usesRecentlyRecommendedMain(right.composition));
+    return rotationDifference || right.assessment.score - left.assessment.score;
+  });
   const options: GovernedOutfit[] = [];
   const usedMain = new Set<string>();
   const usedShoes = new Set<string>();

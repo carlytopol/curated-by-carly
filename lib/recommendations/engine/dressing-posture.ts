@@ -38,6 +38,7 @@ function contextText(context: PostureContext) {
  */
 export function buildDressingPosture(context: PostureContext): DressingPosture {
   const text = contextText(context);
+  const elevatedNonFormal = /\b(?:dressy|dressed(?:\s+up)?|dress)\b[\s\S]{0,40}\b(?:but\s+)?not\s+formal\b|\bnot\s+formal\b[\s\S]{0,40}\b(?:dressy|dressed(?:\s+up)?)\b/.test(text);
   const rejectsFormal = /\bnon[- ]?formal\b|\bformal\s+(?:dresses?|wear|garments?|pieces?)\b[\s\S]{0,120}\b(?:inappropriate|unsuitable|not appropriate|should\s+not|shouldn['’]?t|avoid|unless)\b/.test(text);
   const explicitlyFormal = /\b(black.?tie|white.?tie|gala|formal wedding|formal dinner|formal dress code)\b/.test(text) && !rejectsFormal;
   const specialSocial = /\b(wedding|cocktail|fine dining|anniversary|ceremony|reception)\b/.test(text);
@@ -51,6 +52,13 @@ export function buildDressingPosture(context: PostureContext): DressingPosture {
       version: "dressing-posture-v1-preview", archetype: "formal",
       formalityFloor: 4, formalityTarget: 5, formalityCeiling: 5,
       requestedPolish: "formal", missingContextLowersConfidenceOnly: true,
+    };
+  }
+  if (elevatedNonFormal) {
+    return {
+      version: "dressing-posture-v1-preview", archetype: "special-social",
+      formalityFloor: 3, formalityTarget: 4, formalityCeiling: 4,
+      requestedPolish: "polished", missingContextLowersConfidenceOnly: true,
     };
   }
   if (specialSocial) {

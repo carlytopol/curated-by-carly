@@ -84,6 +84,8 @@ export type EngineWardrobeItem = {
   favorite?: boolean;
   rotationScore?: number;
   last_worn_at?: string | null;
+  last_recommended_at?: string | null;
+  lastRecommendedAt?: string | null;
   availability_status?: string | null;
   unavailable_until?: string | null;
   analysis_metadata?: unknown;

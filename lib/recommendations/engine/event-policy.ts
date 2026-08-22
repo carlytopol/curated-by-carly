@@ -157,6 +157,20 @@ export function auditItemEligibility(
     `This day permits formality through level ${context.dressingPosture.formalityCeiling}; this piece is level ${traits.formality ?? "unknown"}.`,
   );
   reject(
+    "below-formality-floor",
+    foundationRole &&
+      traits.formality != null &&
+      traits.formality < context.dressingPosture.formalityFloor,
+    `This request requires formality level ${context.dressingPosture.formalityFloor} or higher; this piece is level ${traits.formality ?? "unknown"}.`,
+  );
+  reject(
+    "unverified-formality-floor",
+    foundationRole &&
+      context.dressingPosture.formalityFloor >= 3 &&
+      traits.formality == null,
+    "An explicitly elevated request requires verified foundation formality; unknown formality cannot be presented as satisfying it.",
+  );
+  reject(
     "everyday-occasionwear",
     context.dressingPosture.archetype === "everyday-casual-social" &&
       foundationRole &&
@@ -243,6 +257,11 @@ export function auditItemEligibility(
   reject("user-no-long-sleeves", hardCodes.has("user-no-long-sleeves") && traits.longSleeve, "The user excluded long sleeves.");
   reject("user-no-slides", hardCodes.has("user-no-slides") && /\bslides?\b/.test(traits.text), "The user excluded slides.");
   reject("user-no-boots", hardCodes.has("user-no-boots") && traits.boots, "The user excluded boots.");
+  reject(
+    "user-required-heels",
+    hardCodes.has("user-requires-heels") && traits.role === "shoes" && !traits.heel,
+    "The customer explicitly requested heels; flat footwear is not eligible.",
+  );
   const weatherSuitability = reasons.some((reason) => reason.startsWith("extreme-heat"))
     ? "ineligible" : traits.warmth == null ? "unknown" : "eligible";
   const venueSuitability = reasons.some((reason) => reason.startsWith("stadium") || reason.startsWith("school-") || reason === "no-bag")

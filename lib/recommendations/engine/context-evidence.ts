@@ -124,6 +124,10 @@ export function buildContextEvidence(input: {
     ? "extreme"
     : measuredHeat >= 82 ? "hot" : measuredHeat >= 75 ? "warm" : "none";
   const stadium = contains(combined, /\b(stadium|ballpark|truist park|arena concert)\b/);
+  const explicitlyRequiresHeels = contains(
+    combined,
+    /\b(?:want|would like|plan|need|prefer)\s+to\s+wear\s+(?:my\s+)?(?:heels?|heals?|pumps?|stilettos?)\b|\b(?:heels?|heals?|pumps?|stilettos?)\s+(?:required|please)\b/,
+  );
   const rejectsFormalOccasionwear = contains(
     combined,
     /\bnon[- ]?formal\b|\b(?:too|overly)\s+formal\b|\bformal\s+(?:dresses?|wear|garments?|pieces?)\b[\s\S]{0,120}\b(?:inappropriate|unsuitable|not appropriate|should\s+not|shouldn['’]?t|do\s+not|don['’]?t|avoid|only|unless)\b|\b(?:inappropriate|unsuitable|not appropriate|should\s+not|shouldn['’]?t|do\s+not|don['’]?t|avoid)\b[\s\S]{0,120}\bformal\s+(?:dresses?|wear|garments?|pieces?)\b/,
@@ -132,7 +136,11 @@ export function buildContextEvidence(input: {
     combined,
     /\b(?:black.?tie|gala|formal dress code|dress formally|formal wedding|formal dinner)\b/,
   ) && !rejectsFormalOccasionwear;
-  const polished = contains(combined, /\b(polished|put together|elevated|chic)\b/);
+  const elevatedNonFormal = contains(
+    combined,
+    /\b(?:dressy|dressed(?:\s+up)?|dress)\b[\s\S]{0,40}\b(?:but\s+)?not\s+formal\b|\bnot\s+formal\b[\s\S]{0,40}\b(?:dressy|dressed(?:\s+up)?)\b/,
+  );
+  const polished = elevatedNonFormal || contains(combined, /\b(polished|put together|elevated|chic|dressy|dressed up)\b/);
   const casual = contains(combined, /\b(casual|relaxed|not overdone|not overly formal|not over the top)\b/);
   const requestedPolish = polished && casual ? "polished-casual"
     : polished ? "polished"
@@ -146,6 +154,7 @@ export function buildContextEvidence(input: {
   if (bagAllowed.value === false) hard.push(constraint("no-bag", "Do not include a bag.", bagAllowed.provenance, bagAllowed.source));
   if (stadium) hard.push(constraint("stadium-walking-footwear", "Footwear must support stadium walking and prolonged standing.", "inferred", "venue and event language"));
   if (stadium && heatSeverity === "extreme") hard.push(constraint("no-hot-stadium-footwear", "No boots, stilettos, delicate pumps, or formal footwear.", "inferred", "combined venue and event-time heat"));
+  if (explicitlyRequiresHeels) hard.push(constraint("user-requires-heels", "Every recommendation must include verified heeled footwear.", "user", "event notes and intention"));
   if (heatSeverity === "extreme") {
     hard.push(constraint("no-heat-inappropriate-long-sleeves", "No heat-inappropriate long sleeves or heavy layers.", weather.temperature.provenance, weather.temperature.source));
     strongSoft.push(constraint("avoid-jeans-extreme-heat", "Avoid full-length jeans in 90°F+ conditions.", weather.temperature.provenance, weather.temperature.source));

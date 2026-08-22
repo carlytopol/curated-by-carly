@@ -22,6 +22,7 @@ export type WardrobeTraits = {
   boots: boolean;
   suedeFootwear: boolean;
   pump: boolean;
+  heel: boolean;
   pointedToePump: boolean;
   stiletto: boolean;
   formalFootwear: boolean;
@@ -123,7 +124,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
   else if (/\b(black.?tie|gala|formal|gowns?|tuxedo)\b/.test(value)) formality = 5;
   else if (occasionLaceFoundation || /\b(cocktail|evening|satin|silk|charmeuse|sequined?|beaded|organza|tulle)\b/.test(value)) formality = 4;
   else if (/\b(blazers?|tailored|dress shirts?|loafers?|pumps?)\b/.test(value)) formality = 3;
-  else if (/\b(casual|denim|chambray|tees?|tanks?|sneakers?|shorts|utility)\b/.test(value)) formality = 2;
+  else if (/\b(casual|denim|chambray|jeans?|tees?|tanks?|sneakers?|shorts|utility)\b/.test(value)) formality = 2;
   else if (/\b(active|athletic|sweatshirts?|hoodies?|gym|swim|cover.?ups?|kaftans?)\b/.test(value)) formality = 1;
 
   let warmth: number | null = null;
@@ -139,6 +140,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
   const pump = /\b(pumps?|court shoes?|high heels?)\b/.test(value);
   const pointedToePump = /\b(pointed(?:-|\s)?toe(?:d)?(?:\s+\w+){0,3}\s+pumps?|pointed(?:-|\s)?toe(?:d)?|court shoes?)\b/.test(value);
   const stiletto = /\b(stilettos?|stiletto heels?)\b/.test(value);
+  const heel = pump || stiletto || /\b(?:kitten|block|platform|wedge|heeled|high)[- ]heels?\b|\b(?:heeled|wedge) sandals?\b|\bwedges?\b/.test(value);
   const boots = /\bboots?|booties?\b/.test(value);
   const suedeFootwear = /\bsuede\b/.test(value) && classifyWardrobeRole(item) === "shoes";
   const formalFootwear = pump || stiletto || /\b(delicate pumps?|formal heels?|evening shoes?|dress shoes?|metallic strappy|t-strap pumps?)\b/.test(value);
@@ -167,7 +169,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     pattern: statement ? "statement" : solid ? "solid" : "unknown",
     blueDenim, pockets: structuredPockets(item, value), walkability, polish,
     longSleeve, heatSafeLongSleeve, jeans, heavyDenim, boots, suedeFootwear,
-    pump, pointedToePump, stiletto, formalFootwear,
+    pump, heel, pointedToePump, stiletto, formalFootwear,
     casualSlides: /\b(logo slides?|rubber slides?|athletic slides?|pool slides?|flip.?flops?)\b/.test(value),
     formalEveningwear, formalBlouse,
   };
