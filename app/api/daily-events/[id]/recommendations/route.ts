@@ -116,6 +116,19 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
       })),
       eventRecommendationDate,
     ), eventRecommendationDate);
+    const requiredItemIds = resolveExplicitlyRequestedItemIds(
+      closet,
+      [event.notes, intention].filter(Boolean).join(". "),
+    );
+    const requiredItemIdSet = new Set(requiredItemIds);
+    // Explicitly requested owned pieces are resolved against the canonical
+    // wardrobe before rotation ranking. Keep them in the governed input even
+    // when a retrieval/ranking stage would otherwise omit them; Hard
+    // Validation must then include the piece or abstain honestly.
+    const governedWardrobe = [
+      ...closet.filter((item) => requiredItemIdSet.has(item.id)),
+      ...rankedCloset.filter((item) => !requiredItemIdSet.has(item.id)),
+    ];
     const incompatiblePairs: IncompatibleWardrobePair[] = (pairPreferenceResult.data ?? []).map((pair) => ({
       itemAId: pair.item_a_id,
       itemBId: pair.item_b_id,
@@ -146,7 +159,7 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
       venueRules,
     });
     const governed = generateGovernedRecommendations({
-      wardrobe: rankedCloset,
+      wardrobe: governedWardrobe,
       context: contextEvidence,
       userId,
       styleProfile: withProfileNotes(toEngineStyleProfile(featureStyleProfile), userId, profileResult.data ? {
@@ -198,10 +211,10 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
       incompatiblePairs,
       optionCount: 3,
       eventPolicyEnabled: true,
-      requiredItemIds: resolveExplicitlyRequestedItemIds(rankedCloset, [event.notes, intention].filter(Boolean).join(". ")),
+      requiredItemIds,
     });
     const itemLabels = new Map(
-      rankedCloset.map((item) => [item.id, wardrobeItemLabel(item)]),
+      governedWardrobe.map((item) => [item.id, wardrobeItemLabel(item)]),
     );
     console.info("Dress My Day deterministic validation summary.", {
       eventId: event.id,
@@ -314,7 +327,7 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
     const recommendedCounts = new Map<string, number>();
     recommendationItems.forEach(({ clothing_item_id }) => recommendedCounts.set(clothing_item_id, (recommendedCounts.get(clothing_item_id) ?? 0) + 1));
     await Promise.all([...recommendedCounts].map(([itemId, addedCount]) => {
-      const item = rankedCloset.find((candidate) => candidate.id === itemId);
+      const item = governedWardrobe.find((candidate) => candidate.id === itemId);
       return supabase.from("clothing_items").update({
         last_recommended_at: now,
         recommendation_count: (item?.recommendation_count ?? 0) + addedCount,
@@ -322,7 +335,7 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
       }).eq("id", itemId).eq("user_id", userId);
     }));
 
-    const closetById = new Map(rankedCloset.map((item) => [item.id, item]));
+    const closetById = new Map(governedWardrobe.map((item) => [item.id, item]));
     const savedByIndex = new Map((savedRows ?? []).map((row) => [row.option_index, row]));
     return Response.json({
       engineVersion: ENGINE_VERSION,
