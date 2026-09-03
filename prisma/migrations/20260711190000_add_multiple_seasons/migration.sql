@@ -1,0 +1,3 @@
+ALTER TABLE public.clothing_items
+ADD COLUMN IF NOT EXISTS season_2 TEXT,
+ADD COLUMN IF NOT EXISTS season_3 TEXT;

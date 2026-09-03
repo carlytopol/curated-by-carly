@@ -1,0 +1,421 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model ClothingItem {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  designer         String?
+  itemName         String?  @map("item_name")
+  department       String   @default("Women")
+  category         String?
+  subcategory      String?
+  subcategory2     String?  @map("subcategory_2")
+  size             String?
+  color            String?
+  season           String?
+  season2          String?  @map("season_2")
+  season3          String?  @map("season_3")
+  favorite         Boolean  @default(false)
+  stylingSuggestion String? @map("styling_suggestion")
+  imageUrl         String?  @map("image_url")
+  analysisStatus   String   @default("pending") @map("analysis_status")
+  analysisMetadata Json?    @map("analysis_metadata")
+  lastWornAt        DateTime? @map("last_worn_at")
+  wearCount         Int      @default(0) @map("wear_count")
+  availabilityStatus String   @default("available") @map("availability_status")
+  unavailableUntil  DateTime? @map("unavailable_until")
+  availableOverrideAt DateTime? @map("available_override_at")
+  lastRecommendedAt DateTime? @map("last_recommended_at")
+  recommendationCount Int    @default(0) @map("recommendation_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  photos      ClothingPhoto[]
+  outfitItems OutfitItem[]
+  recommendationItems RecommendationItem[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, favorite])
+  @@map("clothing_items")
+}
+
+model UserProfile {
+  userId              String   @id @map("user_id") @db.Uuid
+  displayName         String?  @map("display_name")
+  sex                 String   @default("female")
+  timezone            String?
+  locationName        String?  @map("location_name")
+  latitude            Float?
+  longitude           Float?
+  measurementUnit     String   @default("imperial") @map("measurement_unit")
+  heightCm            Float?   @map("height_cm")
+  weightKg            Float?   @map("weight_kg")
+  bustCm              Float?   @map("bust_cm")
+  underbustCm         Float?   @map("underbust_cm")
+  waistCm             Float?   @map("waist_cm")
+  hipsCm              Float?   @map("hips_cm")
+  thighCm             Float?   @map("thigh_cm")
+  bodiceLengthFrontCm Float?   @map("bodice_length_front_cm")
+  sleeveLengthCm      Float?   @map("sleeve_length_cm")
+  pantLengthCm        Float?   @map("pant_length_cm")
+  inseamCm            Float?   @map("inseam_cm")
+  shoulderWidthCm     Float?   @map("shoulder_width_cm")
+  topSize             String?  @map("top_size")
+  bottomSize          String?  @map("bottom_size")
+  dressSize           String?  @map("dress_size")
+  shoeSize            String?  @map("shoe_size")
+  shoeSizeSystem      String   @default("US") @map("shoe_size_system")
+  maleMeasurements    Json     @default("{}") @map("male_measurements")
+  proportions         String?
+  fitNotes            String?  @map("fit_notes")
+  styleNotes          String?  @map("style_notes")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("user_profiles")
+}
+
+model StyleSurveyResponseSet {
+  id                 String   @id @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  schemaVersion      String   @map("schema_version")
+  status             String
+  answers            Json     @default("{}")
+  skippedQuestionIds String[] @map("skipped_question_ids")
+  startedAt          DateTime? @map("started_at")
+  coreCompletedAt    DateTime? @map("core_completed_at")
+  completedAt        DateTime? @map("completed_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("style_survey_response_sets")
+}
+
+model ExplicitStylePreference {
+  id            String   @id @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  responseSetId String?  @map("response_set_id") @db.Uuid
+  questionId    String   @map("question_id")
+  subject       String
+  value         Json
+  scope         Json     @default("{}")
+  provenance    String
+  schemaVersion String   @map("schema_version")
+  version       BigInt
+  active        Boolean  @default(true)
+  effectiveAt   DateTime @default(now()) @map("effective_at")
+  supersededAt  DateTime? @map("superseded_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId, active, subject])
+  @@map("explicit_style_preferences")
+}
+
+model ObservedStyleSignal {
+  id               String   @id @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  signalType       String   @map("signal_type")
+  subject          String
+  value            String
+  context          Json     @default("{}")
+  sourceRecordType String   @map("source_record_type")
+  sourceRecordId   String?  @map("source_record_id") @db.Uuid
+  strength         String
+  occurredAt       DateTime @map("occurred_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([userId, subject, occurredAt(sort: Desc)])
+  @@map("observed_style_signals")
+}
+
+model InferredStylePreference {
+  id                String   @id @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  subject           String
+  value             String
+  scope             Json     @default("{}")
+  confidence        String
+  evidenceSummary   String   @map("evidence_summary")
+  evidenceSignalIds String[] @map("evidence_signal_ids") @db.Uuid
+  reviewState       String   @map("review_state")
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, reviewState, active])
+  @@map("inferred_style_preferences")
+}
+
+model ExplicitStyleNote {
+  id            String    @id @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  responseSetId String?   @map("response_set_id") @db.Uuid
+  questionId    String    @map("question_id")
+  note          String
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  supersededAt  DateTime? @map("superseded_at")
+
+  @@index([userId, active])
+  @@map("explicit_style_notes")
+}
+
+model StyleLearningSetting {
+  userId          String   @id @map("user_id") @db.Uuid
+  learningEnabled Boolean  @default(false) @map("learning_enabled")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("style_learning_settings")
+}
+
+model ClothingPhoto {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  clothingItemId String       @map("clothing_item_id") @db.Uuid
+  storagePath    String       @map("storage_path")
+  altText        String?      @map("alt_text")
+  mimeType       String       @map("mime_type")
+  width          Int?
+  height         Int?
+  sortOrder      Int          @default(0) @map("sort_order")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  clothingItem   ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storagePath])
+  @@index([userId, clothingItemId, sortOrder])
+  @@map("clothing_photos")
+}
+
+model Outfit {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  title            String?
+  occasion         String?
+  notes            String?
+  coverPath        String?   @map("cover_path")
+  archivedAt       DateTime? @map("archived_at")
+  wornAt           DateTime? @map("worn_at")
+  useAsStyleSignal Boolean   @default(true) @map("use_as_style_signal")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  items           OutfitItem[]
+  recommendations OutfitRecommendation[]
+
+  @@index([userId, wornAt(sort: Desc)])
+  @@index([userId, archivedAt(sort: Desc)])
+  @@map("outfits")
+}
+
+model OutfitItem {
+  outfitId       String       @map("outfit_id") @db.Uuid
+  clothingItemId String       @map("clothing_item_id") @db.Uuid
+  position       Int          @default(0)
+  outfit         Outfit       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  clothingItem   ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+
+  @@id([outfitId, clothingItemId])
+  @@map("outfit_items")
+}
+
+model DailyEvent {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  eventDate DateTime  @map("event_date") @db.Date
+  startsAt  DateTime? @map("starts_at")
+  title     String
+  location  String?
+  dressCode String?   @map("dress_code")
+  notes     String?
+  position  Int       @default(0)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  recommendations OutfitRecommendation[]
+
+  @@index([userId, eventDate, position])
+  @@map("daily_events")
+}
+
+model OutfitRecommendation {
+  id           String     @id @default(uuid()) @db.Uuid
+  userId       String     @map("user_id") @db.Uuid
+  dailyEventId String     @map("daily_event_id") @db.Uuid
+  outfitId     String?    @map("outfit_id") @db.Uuid
+  summary      String
+  rationale    String?
+  status       String     @default("suggested")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  selectedAt   DateTime?  @map("selected_at")
+  wornAt       DateTime?  @map("worn_at")
+  recommendationSetId String @map("recommendation_set_id") @db.Uuid
+  optionIndex  Int        @default(0) @map("option_index")
+  engineVersion String    @default("rotation-v1") @map("engine_version")
+  preferenceSnapshot Json? @map("preference_snapshot")
+  fitCheckPath  String?   @map("fit_check_path")
+  dailyEvent   DailyEvent @relation(fields: [dailyEventId], references: [id], onDelete: Cascade)
+  outfit       Outfit?    @relation(fields: [outfitId], references: [id], onDelete: SetNull)
+  items        RecommendationItem[]
+
+  @@index([userId, dailyEventId])
+  @@unique([recommendationSetId, optionIndex])
+  @@map("outfit_recommendations")
+}
+
+model RecommendationItem {
+  recommendationId String @map("recommendation_id") @db.Uuid
+  clothingItemId   String @map("clothing_item_id") @db.Uuid
+  position         Int    @default(0)
+  recommendation  OutfitRecommendation @relation(fields: [recommendationId], references: [id], onDelete: Cascade)
+  clothingItem    ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+
+  @@id([recommendationId, clothingItemId])
+  @@index([clothingItemId])
+  @@map("recommendation_items")
+}
+
+model RecommendationDiagnostic {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @map("user_id") @db.Uuid
+  dailyEventId        String   @map("daily_event_id") @db.Uuid
+  recommendationSetId String?  @map("recommendation_set_id") @db.Uuid
+  engineVersion       String   @map("engine_version")
+  diagnosticVersion   String   @map("diagnostic_version")
+  payload             Json
+  expiresAt           DateTime @map("expires_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([expiresAt])
+  @@map("recommendation_diagnostics")
+}
+
+model WardrobeMetadataSuggestion {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  clothingItemId String   @map("clothing_item_id") @db.Uuid
+  fieldName      String   @map("field_name")
+  suggestedValue Json     @map("suggested_value")
+  confidence     Float
+  evidence       String?
+  provenance     String
+  modelVersion   String   @map("model_version")
+  status         String
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([clothingItemId, fieldName, modelVersion])
+  @@index([userId, status, confidence])
+  @@map("wardrobe_metadata_suggestions")
+}
+
+model OutfitKnowledgeEdge {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  sourceItemId   String   @map("source_item_id") @db.Uuid
+  targetItemId   String   @map("target_item_id") @db.Uuid
+  relationship   String
+  context        Json     @default("{}")
+  contextHash    String   @map("context_hash")
+  weight         Float
+  confidence     Float
+  evidenceCount  Int      @map("evidence_count")
+  provenance     String[]
+  graphVersion   String   @map("graph_version")
+  lastObservedAt DateTime @map("last_observed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, sourceItemId, targetItemId, relationship, contextHash])
+  @@index([userId, relationship, confidence])
+  @@map("outfit_knowledge_edges")
+}
+
+model WardrobePairPreference {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  itemAId    String   @map("item_a_id") @db.Uuid
+  itemBId    String   @map("item_b_id") @db.Uuid
+  preference String   @default("incompatible")
+  reason     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, itemAId, itemBId])
+  @@index([userId, preference])
+  @@map("wardrobe_pair_preferences")
+}
+
+model ShopperConversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  messages ShopperMessage[]
+
+  @@index([userId, updatedAt(sort: Desc)])
+  @@map("shopper_conversations")
+}
+
+model ShopperMessage {
+  id             String              @id @default(uuid()) @db.Uuid
+  userId         String              @map("user_id") @db.Uuid
+  conversationId String              @map("conversation_id") @db.Uuid
+  role           String
+  content        String
+  productUrl     String?             @map("product_url")
+  imagePath      String?             @map("image_path")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  conversation   ShopperConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, conversationId, createdAt])
+  @@map("shopper_messages")
+}
+
+model CalendarConnection {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  provider       String
+  providerAccountHash String? @map("provider_account_hash")
+  displayLabel   String   @default("Google Calendar") @map("display_label")
+  status         String   @default("active")
+  grantedScopes  String[] @map("granted_scopes")
+  lastSyncedAt   DateTime? @map("last_synced_at")
+  lastErrorCode  String?  @map("last_error_code")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  credential     CalendarCredential?
+
+  @@index([userId, provider, status])
+  @@map("calendar_connections")
+}
+
+model CalendarCredential {
+  connectionId            String   @id @map("connection_id") @db.Uuid
+  encryptedRefreshToken   String?  @map("encrypted_refresh_token")
+  refreshTokenIv          String?  @map("refresh_token_iv")
+  refreshTokenTag         String?  @map("refresh_token_tag")
+  encryptedAccessToken    String?  @map("encrypted_access_token")
+  accessTokenIv           String?  @map("access_token_iv")
+  accessTokenTag          String?  @map("access_token_tag")
+  accessTokenExpiresAt    DateTime? @map("access_token_expires_at")
+  encryptedSubscriptionUrl String? @map("encrypted_subscription_url")
+  subscriptionUrlIv        String? @map("subscription_url_iv")
+  subscriptionUrlTag       String? @map("subscription_url_tag")
+  keyVersion              Int      @default(1) @map("key_version")
+  tokenVersion            Int      @default(1) @map("token_version")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  connection              CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_credentials")
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="180" viewBox="0 0 720 180" role="img" aria-labelledby="title desc">
+  <title id="title">Curated</title>
+  <desc id="desc">Curated private wardrobe wordmark</desc>
+  <rect width="720" height="180" rx="18" fill="#fffaf3"/>
+  <circle cx="90" cy="90" r="58" fill="#173d31" stroke="#b18a50" stroke-width="4"/>
+  <circle cx="90" cy="90" r="48" fill="none" stroke="#f4e8d8" stroke-width="2"/>
+  <text x="90" y="112" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-style="italic" fill="#fffaf3">C</text>
+  <text x="178" y="93" font-family="Georgia, 'Times New Roman', serif" font-size="62" letter-spacing="14" fill="#173d31">CURATED</text>
+  <text x="181" y="130" font-family="Arial, Helvetica, sans-serif" font-size="14" letter-spacing="8" fill="#80586a">THE PRIVATE WARDROBE</text>
+</svg>

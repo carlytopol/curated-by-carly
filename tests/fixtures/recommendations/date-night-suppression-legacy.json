@@ -1,0 +1,49 @@
+{
+  "fixtureVersion": "legacy-characterization.v1",
+  "purpose": "Sanitized universal regression fixture for suppression, alternative quality, restraint, and explanation authority.",
+  "privacy": "Synthetic identifiers and generalized event context only. No customer schedule, venue, address, or profile data.",
+  "event": {
+    "occasion": "date-night-dinner",
+    "desiredTone": ["polished", "intentional", "elevated"],
+    "weather": ["warm"],
+    "movement": ["moderate-walking"]
+  },
+  "authoritativeSuppressions": [
+    {
+      "suppressionId": "suppression-graphic-top",
+      "itemId": "suppressed-graphic-top",
+      "scope": "until-restored",
+      "active": true,
+      "revision": "4",
+      "persisted": true
+    }
+  ],
+  "legacyRecommendations": [
+    {
+      "option": 1,
+      "foundation": ["suppressed-graphic-top", "casual-midi-skirt"],
+      "support": ["metallic-loafers", "chain-bag", "floral-fragrance"],
+      "explanation": "This complete look answers the elevated casual expectation and keeps the look polished casual."
+    },
+    {
+      "option": 2,
+      "foundation": ["casual-ribbed-tank", "utility-pants"],
+      "support": ["metallic-loafers", "chain-bag", "floral-fragrance"],
+      "explanation": "This complete look answers the elevated casual expectation and keeps the look polished casual."
+    },
+    {
+      "option": 3,
+      "foundation": ["casual-scoop-tank", "utility-shorts"],
+      "support": ["metallic-loafers", "chain-bag", "floral-fragrance"],
+      "explanation": "This complete look answers the elevated casual expectation and keeps the look polished casual."
+    }
+  ],
+  "expectedLegacyViolations": [
+    "active-suppression-bypassed",
+    "alternative-relaxes-event-brief",
+    "alternatives-not-materially-distinct",
+    "automatic-support-piece-template",
+    "generic-or-unsupported-explanation",
+    "forced-three-options"
+  ]
+}

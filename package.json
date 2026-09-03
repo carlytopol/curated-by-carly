@@ -6,21 +6,46 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test 'tests/**/*.test.ts'",
+    "test:phase1-db": "node scripts/verify-recommendation-v2-phase1-db.mjs",
+    "test:phase1-supabase": "node scripts/verify-recommendation-v2-phase1-supabase.mjs",
+    "test:v2-artifacts-db": "node scripts/verify-recommendation-v2-artifacts-db.mjs",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.2",
+    "dotenv": "^17.4.2",
     "next": "16.2.10",
+    "node-ical": "^0.26.1",
+    "openai": "^6.46.0",
+    "pg": "^8.22.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@hono/node-server": "^1.19.13"
   }
 }
