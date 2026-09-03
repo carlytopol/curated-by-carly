@@ -21,6 +21,7 @@ export type WardrobeTraits = {
   heavyDenim: boolean;
   boots: boolean;
   suedeFootwear: boolean;
+  fauxLeatherGarment: boolean;
   pump: boolean;
   heel: boolean;
   pointedToePump: boolean;
@@ -144,6 +145,11 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
   const heel = pump || stiletto || /\b(?:kitten|block|platform|wedge|heeled|high)[- ]heels?\b|\b(?:heeled|wedge) sandals?\b|\bwedges?\b/.test(value);
   const boots = /\bboots?|booties?\b/.test(value);
   const suedeFootwear = /\bsuede\b/.test(value) && classifyWardrobeRole(item) === "shoes";
+  // Non-breathable synthetics trap heat against the skin. Scoped to garments:
+  // footwear in these materials sits away from the torso and is not the problem.
+  // Genuine leather is excluded because it breathes.
+  const fauxLeatherGarment = /\b(faux leather|synthetic leather|pleather|vegan leather|pu leather|polyurethane|patent)\b/.test(value)
+    && ["top", "bottom", "one-piece"].includes(role);
   const formalFootwear = pump || stiletto || /\b(delicate pumps?|formal heels?|evening shoes?|dress shoes?|metallic strappy|t-strap pumps?)\b/.test(value);
   let walkability: number | null = null;
   if (/\b(sneakers?|trainers?|walking|flats?|loafers?|supportive)\b/.test(value)) walkability = 5;
@@ -178,6 +184,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     pattern: statement ? "statement" : solid ? "solid" : "unknown",
     blueDenim, pockets: structuredPockets(item, value), walkability, polish,
     longSleeve, heatSafeLongSleeve, jeans, heavyDenim, boots, suedeFootwear,
+    fauxLeatherGarment,
     pump, heel, pointedToePump, stiletto, formalFootwear,
     casualSlides, leisureCasual,
     formalEveningwear, formalBlouse,

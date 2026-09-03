@@ -113,6 +113,7 @@ function hardReject(items: EngineWardrobeItem[], context: ContextEvidence, pairs
   if (Number.isFinite(heat) && heat >= 82 && itemTraits.some((value) => (value.warmth ?? 0) >= 4)) reasons.push("too-warm");
   if (matrix.heatSeverity === "extreme" && itemTraits.some((value) => value.longSleeve)) reasons.push("extreme-heat-long-sleeve");
   if (matrix.heatSeverity === "extreme" && itemTraits.some((value) => value.suedeFootwear || value.boots)) reasons.push("extreme-heat-footwear");
+  if (matrix.heatSeverity === "extreme" && itemTraits.some((value) => value.fauxLeatherGarment)) reasons.push("extreme-heat-nonbreathable-garment");
   if (Number.isFinite(heat) && heat <= 45 && itemTraits.some((value) => value.role !== "fragrance" && value.warmth === 1)) reasons.push("too-cold");
   if ((context.weather.precipitationChance.value ?? 0) >= 55 && itemTraits.some((value) => /\b(suede|satin|silk|open toe)\b/.test(value.text))) reasons.push("rain-sensitive");
   if (context.walking.value === "high" && itemTraits.some((value) => value.role === "shoes" && (value.walkability ?? 3) <= 1)) reasons.push("not-walkable");
@@ -247,6 +248,7 @@ export function traceOutfitValidation(
       rule: "context-constraint-matrix",
       passed: !rejectionReasons.some((reason) => [
         "extreme-heat-long-sleeve", "extreme-heat-footwear", "hot-stadium-footwear",
+        "extreme-heat-nonbreathable-garment",
         "user-no-jeans", "user-no-long-sleeves", "user-no-slides", "user-no-boots",
       ].includes(reason)),
       detail: `Heat ${context.constraintMatrix.heatSeverity}; ${context.constraintMatrix.hard.length} hard and ${context.constraintMatrix.strongSoft.length} strong-soft constraint(s).`,

@@ -968,6 +968,38 @@ test("tailored shorts survive an evening indoor school event", () => {
   assert.equal(tailored.eligible, true);
 });
 
+test("non-breathable synthetic garments are rejected in extreme heat", () => {
+  const hot = context({ title: "Outdoor lunch", notes: "It will be very hot", high: 96 });
+  const trace = traceOutfitValidation([
+    item("Tops", "Casual cotton short sleeve top"),
+    item("Skirts", "Faux leather mini skirt"),
+    item("Shoes", "Comfortable flat sandals"),
+  ], hot);
+  assert.ok(trace.rejectionReasons.includes("extreme-heat-nonbreathable-garment"));
+  // The trace must report the rule the outfit actually failed.
+  assert.equal(trace.hardRules.find((rule) => rule.rule === "context-constraint-matrix")?.passed, false);
+});
+
+test("faux leather footwear stays eligible in extreme heat", () => {
+  const hot = context({ title: "Outdoor lunch", notes: "It will be very hot", high: 96 });
+  const trace = traceOutfitValidation([
+    item("Tops", "Casual cotton short sleeve top"),
+    item("Shorts", "Casual cotton shorts"),
+    item("Shoes", "Faux leather flat sandals"),
+  ], hot);
+  assert.ok(!trace.rejectionReasons.includes("extreme-heat-nonbreathable-garment"));
+});
+
+test("synthetic garments are unaffected when the heat is not extreme", () => {
+  const mild = context({ title: "Lunch", high: 72 });
+  const trace = traceOutfitValidation([
+    item("Tops", "Casual cotton short sleeve top"),
+    item("Skirts", "Faux leather mini skirt"),
+    item("Shoes", "Comfortable flat sandals"),
+  ], mild);
+  assert.ok(!trace.rejectionReasons.includes("extreme-heat-nonbreathable-garment"));
+});
+
 test("confirmed incompatible pair is rejected with user provenance", () => {
   const top = item("Tops", "Sea embroidered shirt");
   const shorts = item("Shorts", "Orange shorts with pockets");
