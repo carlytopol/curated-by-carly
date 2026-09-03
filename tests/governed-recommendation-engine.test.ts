@@ -860,6 +860,22 @@ test("unknown indoor/outdoor setting does not trigger the hot-outdoor pants cap"
   assert.ok(pantsOptions.length > 1, "an unknown setting must not cap pants options");
 });
 
+test("walking language is recognized beyond the bare word walk", () => {
+  const campus = context({
+    title: "Back to school night",
+    notes: "Comfortable shoes for walking around campus",
+    high: 84,
+  });
+  assert.equal(campus.walking.value, "moderate");
+  assert.ok(!campus.unknowns.includes("walking requirement"));
+
+  // Explicit intensity still resolves higher, and silence still stays unknown.
+  const heavy = context({ title: "All day walking and sightseeing", high: 80 });
+  assert.equal(heavy.walking.value, "high");
+  const quiet = context({ title: "Dinner with friends", high: 70 });
+  assert.equal(quiet.walking.value, null);
+});
+
 test("confirmed incompatible pair is rejected with user provenance", () => {
   const top = item("Tops", "Sea embroidered shirt");
   const shorts = item("Shorts", "Orange shorts with pockets");

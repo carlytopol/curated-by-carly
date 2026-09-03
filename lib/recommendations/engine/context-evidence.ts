@@ -79,7 +79,7 @@ export function buildContextEvidence(input: {
       : evidence<boolean>(null, "unknown", "low", "not supplied");
   const walking = contains(combined, /\b(long walk|walking heavy|walking-heavy|all day walking|lots of walking|stadium|airport|sightseeing)\b/)
     ? evidence("high" as const, "inferred", "medium", "event and venue language")
-    : contains(combined, /\b(walk|standing|concert|festival|commute|shopping|out and about)\b/)
+    : contains(combined, /\b(walk(?:s|ing)?|standing|concert|festival|commute|shopping|out and about)\b/)
       ? evidence("moderate" as const, "inferred", "medium", "event language")
       : evidence<"low" | "moderate" | "high">(null, "unknown", "low", "not supplied");
 
