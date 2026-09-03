@@ -83,6 +83,13 @@ export function buildEventPolicy(context: ContextEvidence): EventPolicy {
       "comfortable-walking-shoes",
     );
   }
+  if (
+    ["school-community-day", "business-meeting", "formal-dinner"].includes(archetype) &&
+    context.evening.value === true &&
+    context.setting.value === "indoor"
+  ) {
+    hardConstraints.push("reject-evening-indoor-leisurewear");
+  }
   return {
     archetype,
     policyVersion: "event-policy-v1-preview",
@@ -111,6 +118,12 @@ export function auditItemEligibility(
   };
   const stadium = policy.archetype === "outdoor-stadium-concert";
   const schoolCommunity = policy.archetype === "school-community-day";
+  // All three conditions must be established. An unknown evening or setting
+  // leaves this disarmed rather than assuming the stricter reading.
+  const conservativeEveningIndoor =
+    ["school-community-day", "business-meeting", "formal-dinner"].includes(policy.archetype) &&
+    context.evening.value === true &&
+    context.setting.value === "indoor";
   const extremeHeat = effectiveHeat(context) >= 90 || context.constraintMatrix.heatSeverity === "extreme";
   const foundationRole = ["top", "bottom", "one-piece"].includes(traits.role);
   const eventText = [
@@ -243,6 +256,11 @@ export function auditItemEligibility(
       "Cocktail, evening, and overt occasionwear are not eligible for a school or community daytime commitment.",
     );
   }
+  reject(
+    "evening-indoor-leisurewear",
+    conservativeEveningIndoor && traits.leisureCasual && traits.formality != null && traits.formality <= 2,
+    "Shorts, swimwear, activewear, and pool footwear are not eligible for an evening indoor commitment with a conservative audience.",
+  );
   if (context.bagAllowed.value === false) {
     reject("no-bag", traits.role === "bag", "The user or verified venue policy does not permit a bag.");
   }

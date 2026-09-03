@@ -41,6 +41,22 @@ function eventHour(weather: WeatherPayload | null | undefined, startsAt: string 
   return Object.fromEntries(Object.entries(hourly).map(([key, values]) => [key, values?.[index]]));
 }
 
+/**
+ * The stored instant carries no zone and the server runs in UTC, so an evening
+ * reading requires the customer's own zone. Without it the hour stays unknown.
+ */
+function eventLocalHour(startTime: string | null, timeZone: string | null | undefined) {
+  if (!startTime || !timeZone) return null;
+  const at = new Date(startTime);
+  if (Number.isNaN(at.getTime())) return null;
+  try {
+    const hour = Number(new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", hourCycle: "h23" }).format(at));
+    return Number.isFinite(hour) ? hour : null;
+  } catch {
+    return null;
+  }
+}
+
 function constraint(code: string, statement: string, provenance: ContextConstraint["provenance"], source: string): ContextConstraint {
   return { code, statement, provenance, source };
 }
@@ -52,12 +68,13 @@ export function buildContextEvidence(input: {
   intention?: string | null;
   weather?: WeatherPayload | null;
   venueRules?: VenueRule[];
+  timeZone?: string | null;
 }): ContextEvidence {
   const { agendaItem } = input;
   const combined = [agendaItem.title, agendaItem.location, input.notes, input.intention].filter(Boolean).join(" ");
   const venueRules = input.venueRules ?? [];
   const explicitOutdoor = contains(combined, /\b(outdoor|outside|stadium|ballpark|park|garden|patio|terrace|beach|pool)\b/);
-  const explicitIndoor = contains(combined, /\b(indoor|inside|ballroom|museum|office|theatre|theater)\b/);
+  const explicitIndoor = contains(combined, /\b(indoor|inside|ballroom|museum|office|theatre|theater|classrooms?|auditorium|gymnasium|cafeteria|library|banquet)\b/);
   const verifiedSetting = venueRules.find((rule) => rule.kind === "setting" && (rule.effect === "indoor" || rule.effect === "outdoor"));
   const setting = verifiedSetting?.effect === "outdoor" || verifiedSetting?.effect === "indoor"
     ? evidence<"indoor" | "outdoor" | "mixed">(verifiedSetting.effect, "verified", verifiedSetting.confidence, verifiedSetting.sourceUrl)
@@ -82,6 +99,14 @@ export function buildContextEvidence(input: {
     : contains(combined, /\b(walk(?:s|ing)?|standing|concert|festival|commute|shopping|out and about)\b/)
       ? evidence("moderate" as const, "inferred", "medium", "event language")
       : evidence<"low" | "moderate" | "high">(null, "unknown", "low", "not supplied");
+  // A verified local hour outranks language. Neither present leaves evening
+  // unknown, which must never arm an evening-only rule.
+  const localHour = eventLocalHour(agendaItem.startTime, input.timeZone);
+  const evening = localHour != null
+    ? evidence(localHour >= 17, "user", "high", "customer time zone")
+    : contains(combined, /\b(evening|night|tonight|dinner)\b/)
+      ? evidence(true, "inferred", "medium", "event language")
+      : evidence<boolean>(null, "unknown", "low", "not supplied");
 
   const current = input.weather?.current ?? {};
   const atEvent = eventHour(input.weather, agendaItem.startTime);
@@ -194,6 +219,7 @@ export function buildContextEvidence(input: {
     venue: evidence(agendaItem.location, "user", "high", "agenda"),
     setting,
     walking,
+    evening,
     bagAllowed,
     pocketsRequired,
     weather,

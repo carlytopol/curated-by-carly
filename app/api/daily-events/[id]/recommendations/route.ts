@@ -74,6 +74,7 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
     }
     const weather = requestContext?.weather ?? requestContext;
     const intention = typeof requestContext?.intention === "string" ? requestContext.intention.slice(0, 160) : null;
+    const timeZone = typeof requestContext?.timeZone === "string" ? requestContext.timeZone.slice(0, 64) : null;
     // Authentication is established above. Keep every subsequent read and
     // write explicitly owner-scoped, while using the server-only client so a
     // stale or clock-skewed browser JWT cannot detach a saved correction from
@@ -157,6 +158,7 @@ export async function POST(request: Request, context: RouteContext<"/api/daily-e
       intention,
       weather,
       venueRules,
+      timeZone,
     });
     const governed = generateGovernedRecommendations({
       wardrobe: governedWardrobe,

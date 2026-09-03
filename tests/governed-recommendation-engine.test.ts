@@ -915,6 +915,59 @@ test("the rationale reports the polish the garments reach, not the one requested
   assert.match(result.options[0].rationale, /sits closer to casual than the polished casual you asked for/);
 });
 
+test("an evening indoor school event excludes casual shorts", () => {
+  const evidence = context({
+    title: "Back to school night in the classrooms",
+    notes: "Meeting the teachers",
+    high: 80,
+  });
+  assert.equal(evidence.evening.value, true);
+  assert.equal(evidence.setting.value, "indoor");
+  const policy = buildEventPolicy(evidence);
+  assert.equal(policy.archetype, "school-community-day");
+  assert.ok(policy.hardConstraints.includes("reject-evening-indoor-leisurewear"));
+
+  const cutoffs = auditItemEligibility(item("Shorts", "Distressed cutoff denim shorts"), evidence, policy);
+  assert.equal(cutoffs.eligible, false);
+  assert.ok(cutoffs.rejectionReasons.includes("evening-indoor-leisurewear"));
+});
+
+test("the evening leisurewear rule stays disarmed when evening or setting is unknown", () => {
+  // Indoor is established, but nothing says the event is in the evening.
+  const daytime = context({ title: "School open house in the classrooms", notes: "Morning visit", high: 80 });
+  assert.equal(daytime.evening.value, null);
+  assert.equal(daytime.setting.value, "indoor");
+  assert.equal(
+    auditItemEligibility(item("Shorts", "Distressed cutoff denim shorts"), daytime, buildEventPolicy(daytime)).eligible,
+    true,
+  );
+
+  // Evening is established, but the setting was never resolved.
+  const unknownSetting = context({ title: "Back to school night", notes: "Meeting the teachers", high: 80 });
+  assert.equal(unknownSetting.evening.value, true);
+  assert.equal(unknownSetting.setting.value, null);
+  assert.equal(
+    auditItemEligibility(item("Shorts", "Distressed cutoff denim shorts"), unknownSetting, buildEventPolicy(unknownSetting)).eligible,
+    true,
+  );
+});
+
+test("tailored shorts survive an evening indoor school event", () => {
+  const evidence = context({
+    title: "Back to school night in the classrooms",
+    notes: "Meeting the teachers",
+    high: 80,
+  });
+  const tailored = auditItemEligibility(
+    item("Shorts", "High-waisted pleated tailored shorts"),
+    evidence,
+    buildEventPolicy(evidence),
+  );
+  // Formality 3 keeps the piece above the casual threshold the rule targets.
+  assert.equal(tailored.formality, 3);
+  assert.equal(tailored.eligible, true);
+});
+
 test("confirmed incompatible pair is rejected with user provenance", () => {
   const top = item("Tops", "Sea embroidered shirt");
   const shorts = item("Shorts", "Orange shorts with pockets");

@@ -27,6 +27,7 @@ export type WardrobeTraits = {
   stiletto: boolean;
   formalFootwear: boolean;
   casualSlides: boolean;
+  leisureCasual: boolean;
   formalEveningwear: boolean;
   formalBlouse: boolean;
 };
@@ -160,6 +161,14 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     /\b(linen|gauze|mesh|sheer cotton|lightweight cotton|breathable)\b/.test(value);
   const jeans = /\bjeans?\b/.test(value);
   const heavyDenim = jeans && !/\b(lightweight|featherweight|summer weight|thin|lyocell|tencel)\b/.test(value);
+  const casualSlides = /\b(logo slides?|rubber slides?|athletic slides?|pool slides?|flip.?flops?)\b/.test(value);
+  // Daytime leisure pieces: bare-legged shorts, swim, and activewear on the
+  // foundation, plus pool-style footwear. Tanks and tees are deliberately out.
+  const shortsPiece = role === "bottom" && /\bshorts\b/.test(value);
+  const swimPiece = /\b(swim|bathing suit|bikini|cover.?up|kaftan)\b/.test(value);
+  const athleticPiece = /\b(athletic|activewear|workout|gym|running|track pants?|sweatpants?|joggers?)\b/.test(value);
+  const leisureCasual = (["top", "bottom", "one-piece"].includes(role) && (shortsPiece || swimPiece || athleticPiece))
+    || (role === "shoes" && casualSlides);
   const formalEveningwear = occasionLaceFoundation || /\b(satin|silk|charmeuse|evening|cocktail|gala|organza|tulle|sequins?)\b/.test(value);
   const formalBlouse = role === "top" && (
     formalEveningwear || /\b(tie.?neck|puff.?sleeves?|pleated formal|evening blouse)\b/.test(value)
@@ -170,7 +179,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     blueDenim, pockets: structuredPockets(item, value), walkability, polish,
     longSleeve, heatSafeLongSleeve, jeans, heavyDenim, boots, suedeFootwear,
     pump, heel, pointedToePump, stiletto, formalFootwear,
-    casualSlides: /\b(logo slides?|rubber slides?|athletic slides?|pool slides?|flip.?flops?)\b/.test(value),
+    casualSlides, leisureCasual,
     formalEveningwear, formalBlouse,
   };
 }

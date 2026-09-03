@@ -716,7 +716,11 @@ export function TodayWorkspace({ embedded = false }: { embedded?: boolean }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ weather: isToday ? weather : null, intention }),
+          body: JSON.stringify({
+            weather: isToday ? weather : null,
+            intention,
+            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }),
           signal: controller.signal,
         },
       ).finally(() => window.clearTimeout(timeout));

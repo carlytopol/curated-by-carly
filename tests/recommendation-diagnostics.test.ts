@@ -19,6 +19,7 @@ function result(): GovernedRecommendationResult {
     venue: evidence("Garden"),
     setting: evidence("outdoor" as const),
     walking: evidence("moderate" as const),
+    evening: evidence(false),
     bagAllowed: evidence(true),
     pocketsRequired: evidence(false),
     weather: {
