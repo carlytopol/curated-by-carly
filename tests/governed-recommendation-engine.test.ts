@@ -876,6 +876,45 @@ test("walking language is recognized beyond the bare word walk", () => {
   assert.equal(quiet.walking.value, null);
 });
 
+test("an elevated polish request raises the formality target to match", () => {
+  const posture = context({
+    title: "Back to school night",
+    notes: "I want to be put together",
+    high: 72,
+  }).dressingPosture;
+  assert.equal(posture.archetype, "everyday-casual-social");
+  assert.equal(posture.requestedPolish, "polished-casual");
+  assert.equal(posture.formalityTarget, 3);
+  assert.equal(posture.formalityCeiling, 3);
+});
+
+test("a request with no polish language leaves the formality target alone", () => {
+  const posture = context({
+    title: "Back to school night",
+    notes: "Comfortable shoes for walking around campus",
+    high: 72,
+  }).dressingPosture;
+  assert.equal(posture.requestedPolish, "casual");
+  assert.equal(posture.formalityTarget, 2);
+});
+
+test("the rationale reports the polish the garments reach, not the one requested", () => {
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      item("Tops", "Casual cotton tee", { color: "White" }),
+      item("Tops", "Casual cotton short sleeve top", { color: "Navy" }),
+      item("Pants", "Casual denim jeans", { color: "Blue" }),
+      item("Shoes", "Walkable loafers"),
+    ],
+    context: context({ title: "Back to school night", notes: "I want to be put together", high: 72 }),
+    optionCount: 1,
+  });
+  assert.ok(result.options.length > 0);
+  // The foundation averages formality 2 against a polished-casual request, so the
+  // rationale must disclose the gap rather than repeat the request back.
+  assert.match(result.options[0].rationale, /sits closer to casual than the polished casual you asked for/);
+});
+
 test("confirmed incompatible pair is rejected with user provenance", () => {
   const top = item("Tops", "Sea embroidered shirt");
   const shorts = item("Shorts", "Orange shorts with pockets");

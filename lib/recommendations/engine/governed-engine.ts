@@ -355,6 +355,18 @@ function compatibleSupports(
     .map(({ item }) => item);
 }
 
+const POLISH_RANK = { casual: 1, "polished-casual": 2, polished: 3, formal: 4 } as const;
+type PolishLabel = keyof typeof POLISH_RANK;
+
+/** Describes the polish the chosen garments actually reach, not the one requested. */
+function achievedPolish(items: EngineWardrobeItem[]): PolishLabel | null {
+  const foundation = items.map(traits).filter((value) => ["top", "bottom", "one-piece"].includes(value.role));
+  const known = foundation.map((value) => value.formality).filter((value): value is number => value != null);
+  if (!known.length) return null;
+  const average = known.reduce((sum, value) => sum + value, 0) / known.length;
+  return average < 2.5 ? "casual" : average < 3.5 ? "polished-casual" : average < 4.5 ? "polished" : "formal";
+}
+
 function explanation(
   items: EngineWardrobeItem[],
   context: ContextEvidence,
@@ -376,8 +388,14 @@ function explanation(
       : "uses the strongest available foundation, though you should confirm its pockets");
   }
   if (context.statedDressCode.value) reasons.push(`answers the ${context.statedDressCode.value} expectation`);
-  if (stylingBrief.desiredPolish !== "neutral") {
-    reasons.push(`keeps the complete look ${stylingBrief.desiredPolish.replace("-", " ")}`);
+  // Report the polish the garments actually reach. Echoing the request back
+  // let a formality-2 foundation describe itself as polished casual.
+  const achieved = achievedPolish(items);
+  if (achieved) {
+    const requested = stylingBrief.desiredPolish;
+    reasons.push(requested !== "neutral" && POLISH_RANK[achieved] < POLISH_RANK[requested]
+      ? `sits closer to ${achieved.replace("-", " ")} than the ${requested.replace("-", " ")} you asked for`
+      : `keeps the complete look ${achieved.replace("-", " ")}`);
   }
   const because = reasons.length ? reasons.slice(0, 4).join(", ") : "balances the occasion, comfort, and wardrobe rotation";
   return `Wear ${list}. The complete look ${because}.`;

@@ -31,12 +31,38 @@ function contextText(context: PostureContext) {
   ].filter(Boolean).join(" ").toLowerCase();
 }
 
+// The minimum foundation formality an elevated polish request implies. Kept in
+// step with polishTarget in style-profile.ts, which scores the same distance.
+// Casual and neutral imply nothing and never raise the target.
+const impliedFormality: Record<DressingPosture["requestedPolish"], number> = {
+  casual: 0,
+  neutral: 0,
+  "polished-casual": 3,
+  polished: 4,
+  formal: 5,
+};
+
+/**
+ * The polish a customer asks for and the formality the engine aims at must
+ * describe the same day. Raise the target to what the requested polish implies,
+ * never past the ceiling that governs eligibility.
+ */
+function reconcileTargetWithPolish(posture: DressingPosture): DressingPosture {
+  const implied = impliedFormality[posture.requestedPolish];
+  if (implied <= posture.formalityTarget) return posture;
+  return { ...posture, formalityTarget: Math.min(posture.formalityCeiling, implied) };
+}
+
 /**
  * Establishes how dressed the day should feel before a garment is considered.
  * "Polished" refines an everyday posture; it does not promote lunch, shopping,
  * errands, or another casual social day into occasion/formal dressing.
  */
 export function buildDressingPosture(context: PostureContext): DressingPosture {
+  return reconcileTargetWithPolish(resolvePostureShape(context));
+}
+
+function resolvePostureShape(context: PostureContext): DressingPosture {
   const text = contextText(context);
   const elevatedNonFormal = /\b(?:dressy|dressed(?:\s+up)?|dress)\b[\s\S]{0,40}\b(?:but\s+)?not\s+formal\b|\bnot\s+formal\b[\s\S]{0,40}\b(?:dressy|dressed(?:\s+up)?)\b/.test(text);
   const rejectsFormal = /\bnon[- ]?formal\b|\bformal\s+(?:dresses?|wear|garments?|pieces?)\b[\s\S]{0,120}\b(?:inappropriate|unsuitable|not appropriate|should\s+not|shouldn['’]?t|avoid|unless)\b/.test(text);
