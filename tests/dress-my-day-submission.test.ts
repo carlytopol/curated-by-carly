@@ -5,6 +5,7 @@ import {
   hasUsableRecommendationOptions,
   initialPlanSubmissionState,
   planSubmissionReducer,
+  recoverableOptionsFromEvents,
   shouldSubmitPlanOnEnter,
   type PlanDraft,
 } from "../lib/dress-my-day/submission";
@@ -73,4 +74,27 @@ test("the client accepts one to three governed options and rejects malformed set
   assert.equal(hasUsableRecommendationOptions([]), false);
   assert.equal(hasUsableRecommendationOptions([{}, {}, {}, {}]), false);
   assert.equal(hasUsableRecommendationOptions(null), false);
+});
+
+test("a timed-out edit recovers the persisted options for its own event", () => {
+  const options = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const items = [
+    { id: "other-event", recommendationOptions: [{ id: "z" }] },
+    { id: "event-1", recommendationOptions: options },
+  ];
+  assert.deepEqual(recoverableOptionsFromEvents(items, "event-1"), options);
+});
+
+test("recovery returns null when the event or its options cannot be used", () => {
+  const three = [{}, {}, {}];
+  // The event is not in the reloaded day at all.
+  assert.equal(recoverableOptionsFromEvents([{ id: "other", recommendationOptions: three }], "event-1"), null);
+  // The event is there but carries no set yet.
+  assert.equal(recoverableOptionsFromEvents([{ id: "event-1", recommendationOptions: [] }], "event-1"), null);
+  assert.equal(recoverableOptionsFromEvents([{ id: "event-1" }], "event-1"), null);
+  // A malformed set is never rendered.
+  assert.equal(recoverableOptionsFromEvents([{ id: "event-1", recommendationOptions: [{}, {}, {}, {}] }], "event-1"), null);
+  // Nothing usable came back from the schedule endpoint.
+  assert.equal(recoverableOptionsFromEvents(null, "event-1"), null);
+  assert.equal(recoverableOptionsFromEvents([], "event-1"), null);
 });

@@ -76,3 +76,25 @@ export function shouldSubmitPlanOnEnter(input: {
 export function hasUsableRecommendationOptions(value: unknown): value is unknown[] {
   return Array.isArray(value) && value.length > 0 && value.length <= 3;
 }
+
+type RecoverableEvent<Option> = {
+  id: string;
+  recommendationOptions?: Option[] | null;
+};
+
+/**
+ * A timed-out recommendation request is not a failed one: the server persists
+ * the finished set regardless. Given a freshly reloaded day, return that event's
+ * options when they are usable, or null when there is nothing worth rendering.
+ */
+export function recoverableOptionsFromEvents<Option>(
+  items: ReadonlyArray<RecoverableEvent<Option> | null | undefined> | null | undefined,
+  eventId: string,
+): Option[] | null {
+  if (!Array.isArray(items)) return null;
+  const options = items.find((event) => event?.id === eventId)?.recommendationOptions ?? [];
+  // Materialize the guard as a plain boolean. Its `unknown[]` type predicate
+  // would otherwise widen the caller's option type through the narrowing.
+  const usable: boolean = hasUsableRecommendationOptions(options);
+  return usable ? options : null;
+}

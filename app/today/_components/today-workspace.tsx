@@ -13,10 +13,16 @@ import {
   initialPlanSubmissionState,
   buildDailyEventPayload,
   planSubmissionReducer,
+  recoverableOptionsFromEvents,
   shouldSubmitPlanOnEnter,
   type PlanDraft,
 } from "@/lib/dress-my-day/submission";
 import styles from "./dress-my-day.module.css";
+
+// The governed engine keeps composing and persists the finished set even after
+// the browser stops waiting. This bound only decides how long we watch the
+// request — never whether the edit succeeded.
+const RECOMMENDATION_REQUEST_TIMEOUT_MS = 60_000;
 
 const quotes = [
   {
@@ -675,6 +681,25 @@ export function TodayWorkspace({ embedded = false }: { embedded?: boolean }) {
     );
   }
 
+  // A timed-out request is not a failed one. The server finishes composing and
+  // saves the set regardless, so read back the persisted edit before telling the
+  // customer that nothing was produced.
+  async function recoverPersistedRecommendations(eventId: string) {
+    try {
+      const response = await fetch(`/api/daily-events?date=${dateKey}`);
+      if (!response.ok) return null;
+      const items: DailyEvent[] = await response.json();
+      setEvents(items);
+      const options = recoverableOptionsFromEvents(items, eventId);
+      if (!options) return null;
+      setActiveOptionByEvent((current) => ({ ...current, [eventId]: 0 }));
+      setScheduleStatus("");
+      return options;
+    } catch {
+      return null;
+    }
+  }
+
   async function recommend(eventId: string): Promise<OutfitRecommendation[] | null> {
     setRecommendingEventId(eventId);
     setRecommendationErrorByEvent((current) => {
@@ -685,7 +710,7 @@ export function TodayWorkspace({ embedded = false }: { embedded?: boolean }) {
     setScheduleStatus("Curating a look from your wardrobe…");
     try {
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 28_000);
+      const timeout = window.setTimeout(() => controller.abort(), RECOMMENDATION_REQUEST_TIMEOUT_MS);
       const response = await fetch(
         `/api/daily-events/${eventId}/recommendations`,
         {
@@ -721,8 +746,12 @@ export function TodayWorkspace({ embedded = false }: { embedded?: boolean }) {
       return options;
     } catch (error) {
       console.error("Dress My Day recommendation request failed.", error);
+      if (error instanceof DOMException && error.name === "AbortError") {
+        const recovered = await recoverPersistedRecommendations(eventId);
+        if (recovered) return recovered;
+      }
       const message = error instanceof DOMException && error.name === "AbortError"
-        ? "Curated could not complete this edit within 30 seconds. Your plan is safe; please try once more."
+        ? "Curated is still composing this edit. Your plan is saved; open it again in a moment."
         : "The stylist connection was interrupted. Please try again.";
       setScheduleStatus(message);
       setRecommendationErrorByEvent((current) => ({ ...current, [eventId]: message }));
