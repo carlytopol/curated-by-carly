@@ -825,6 +825,41 @@ test("hot outdoor recommendation sets contain at most one pants-based option, in
   assert.ok(pantsOptions.length <= 1);
 });
 
+test("unknown indoor/outdoor setting does not trigger the hot-outdoor pants cap", () => {
+  // Every bottom here is pants, so the cap is the only thing that could reduce
+  // the edit below three complete options.
+  const wardrobe = [
+    item("Tops", "Casual cotton short sleeve top", { color: "White" }),
+    item("Tops", "Casual linen tee", { color: "Pink" }),
+    item("Tops", "Casual cotton short sleeve blouse", { color: "Navy" }),
+    item("Pants", "Casual cotton lightweight trousers with pockets", { color: "Black" }),
+    item("Pants", "Casual cotton twill trousers with pockets", { color: "Khaki" }),
+    item("Pants", "Casual linen wide-leg trousers with pockets", { color: "Ivory" }),
+    item("Shoes", "Supportive leather sneakers"),
+    item("Shoes", "Comfortable flat sandals"),
+    item("Shoes", "Walkable loafers"),
+  ];
+  const result = generateGovernedRecommendations({
+    wardrobe,
+    context: context({
+      title: "Back to school night",
+      notes: "Comfortable shoes for walking around campus",
+      high: 96,
+    }),
+    optionCount: 3,
+  });
+  assert.equal(result.context.setting.value, null);
+  assert.equal(result.context.constraintMatrix.heatSeverity, "extreme");
+  const pantsOptions = result.options.filter((option) =>
+    option.composition.foundation.kind !== "dress-or-jumpsuit" &&
+    /\b(pants?|trousers?|jeans?|leggings?|capris?|culottes?)\b/.test(
+      [option.composition.foundation.bottom.item_name, option.composition.foundation.bottom.category]
+        .join(" ").toLowerCase(),
+    ));
+  assert.equal(result.options.length, 3);
+  assert.ok(pantsOptions.length > 1, "an unknown setting must not cap pants options");
+});
+
 test("confirmed incompatible pair is rejected with user provenance", () => {
   const top = item("Tops", "Sea embroidered shirt");
   const shorts = item("Shorts", "Orange shorts with pockets");

@@ -600,8 +600,11 @@ export function generateGovernedRecommendations(input: {
   const usedShoes = new Set<string>();
   const usedBags = new Set<string>();
   const usedFragrances = new Set<string>();
+  // Outdoor-specific diversity rules require a resolved outdoor setting. An
+  // unknown setting lowers confidence rather than implying exposure, so it must
+  // not silently restrict pants the way a verified outdoor venue does.
   const hotOutdoorSet = ["hot", "extreme"].includes(input.context.constraintMatrix.heatSeverity) &&
-    input.context.setting.value !== "indoor";
+    (input.context.setting.value === "outdoor" || input.context.setting.value === "mixed");
   let pantsOptionUsed = false;
   let tankOptionUsed = false;
   const requestedOptions = input.optionCount ?? 3;
