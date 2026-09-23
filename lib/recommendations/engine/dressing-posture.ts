@@ -71,7 +71,7 @@ function resolvePostureShape(context: PostureContext): DressingPosture {
   const professional = /\b(board|client|business|office|presentation|conference)\b/.test(text) &&
     /\b(meeting|dinner|event|day|presentation|conference)\b/.test(text);
   const active = /\b(workout|gym|fitness|tennis|exercise|pool|beach)\b/.test(text);
-  const everyday = /\b(shopping|lunch|brunch|errands?|appointment|out and about|cafe|coffee|casual|concert|stadium|festival|volunteer(?:ing)?|school|classroom|campus|open house|community service|touring (?:prospective|potential) parents?)\b/.test(text);
+  const everyday = /\b(shopping|lunch|brunch|errands?|appointment|out and about|cafe|coffee|casual|concert|stadium|festival|volunteer(?:ing)?|school|classroom|campus|open house|community service|picnic|block party|farmers market|touring (?:prospective|potential) parents?)\b/.test(text);
 
   if (explicitlyFormal) {
     return {
@@ -126,7 +126,10 @@ function resolvePostureShape(context: PostureContext): DressingPosture {
   }
   return {
     version: "dressing-posture-v1-preview", archetype: "neutral",
-    formalityFloor: 1, formalityTarget: 3, formalityCeiling: 4,
+    // An unrecognised event is the one case with no evidence at all. Cap it at
+    // considered daytime formality rather than permitting occasionwear; a
+    // vocabulary gap should degrade safely, not open the wardrobe.
+    formalityFloor: 1, formalityTarget: 3, formalityCeiling: 3,
     requestedPolish: /\bpolished|elevated|chic\b/.test(text) ? "polished" : "neutral",
     missingContextLowersConfidenceOnly: true,
   };

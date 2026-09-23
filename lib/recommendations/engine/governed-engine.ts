@@ -397,7 +397,7 @@ function explanation(
     const requested = stylingBrief.desiredPolish;
     reasons.push(requested !== "neutral" && POLISH_RANK[achieved] < POLISH_RANK[requested]
       ? `sits closer to ${achieved.replace("-", " ")} than the ${requested.replace("-", " ")} you asked for`
-      : `keeps the complete look ${achieved.replace("-", " ")}`);
+      : `reads ${achieved.replace("-", " ")}`);
   }
   const because = reasons.length ? reasons.slice(0, 4).join(", ") : "balances the occasion, comfort, and wardrobe rotation";
   return `Wear ${list}. The complete look ${because}.`;

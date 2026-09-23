@@ -46,13 +46,14 @@ function agenda(title: string, location = "Atlanta"): DailyAgendaItem {
 
 function context(input: {
   title?: string; location?: string; notes?: string; dressCode?: string;
-  high?: number; rain?: number; venueRules?: VenueRule[];
+  high?: number; rain?: number; venueRules?: VenueRule[]; timeZone?: string;
 }) {
   return buildContextEvidence({
     agendaItem: agenda(input.title ?? "Dinner", input.location),
     notes: input.notes,
     statedDressCode: input.dressCode,
     venueRules: input.venueRules,
+    timeZone: input.timeZone,
     weather: {
       current: { temperature_2m: input.high, apparent_temperature: input.high, precipitation_probability: input.rain },
       daily: { temperature_2m_max: [input.high] },
@@ -998,6 +999,80 @@ test("synthetic garments are unaffected when the heat is not extreme", () => {
     item("Shoes", "Comfortable flat sandals"),
   ], mild);
   assert.ok(!trace.rejectionReasons.includes("extreme-heat-nonbreathable-garment"));
+});
+
+// Regression suite for the Charity Picnic at Oakland Cemetery, where every
+// protective rule stayed disarmed because the event matched no vocabulary.
+function cemeteryPicnic() {
+  return context({
+    title: "Charity Picnic event at Oakland Cemetery",
+    location: "Oakland Cemetery — Old Fourth Ward, Atlanta, Georgia",
+    notes: "Festive for a cemetery but it may be slightly chilly",
+    high: 68,
+    timeZone: "America/New_York",
+  });
+}
+
+test("an outdoor picnic venue is recognised rather than falling through to neutral", () => {
+  const evidence = cemeteryPicnic();
+  assert.equal(evidence.setting.value, "outdoor");
+  assert.equal(evidence.unpavedGround.value, true);
+  assert.equal(evidence.dressingPosture.archetype, "everyday-casual-social");
+  assert.equal(evidence.dressingPosture.formalityCeiling, 3);
+});
+
+test("an unrecognised event caps formality instead of permitting occasionwear", () => {
+  const posture = context({ title: "Quarterly offsite thing", high: 70 }).dressingPosture;
+  assert.equal(posture.archetype, "neutral");
+  assert.equal(posture.formalityCeiling, 3);
+});
+
+test("fine heels are rejected on unpaved ground", () => {
+  const evidence = cemeteryPicnic();
+  const policy = buildEventPolicy(evidence);
+  const stilettos = auditItemEligibility(item("Shoes", "Fuchsia suede round-toe stiletto pumps"), evidence, policy);
+  assert.equal(stilettos.eligible, false);
+  assert.ok(stilettos.rejectionReasons.includes("unpaved-ground-footwear"));
+  // Flats on the same ground stay eligible.
+  const flats = auditItemEligibility(item("Shoes", "Supportive leather sneakers"), evidence, policy);
+  assert.ok(!flats.rejectionReasons.includes("unpaved-ground-footwear"));
+});
+
+test("bare-legged bottoms are rejected on a cool evening", () => {
+  const evidence = cemeteryPicnic();
+  const shorts = auditItemEligibility(
+    item("Shorts", "High-waisted pleated tailored shorts"), evidence, buildEventPolicy(evidence));
+  assert.equal(shorts.eligible, false);
+  assert.ok(shorts.rejectionReasons.includes("cool-evening-bare-legs"));
+
+  // A warm evening with no cool language leaves the rule disarmed.
+  const warm = context({ title: "Charity Picnic event at Oakland Cemetery", notes: "Warm out", high: 88, timeZone: "America/New_York" });
+  assert.ok(!auditItemEligibility(item("Shorts", "High-waisted pleated tailored shorts"), warm, buildEventPolicy(warm))
+    .rejectionReasons.includes("cool-evening-bare-legs"));
+});
+
+test("an embellished piece reads as dressy rather than unknown formality", () => {
+  const evidence = cemeteryPicnic();
+  const top = auditItemEligibility(
+    item("Tops", "Black embellished puff-sleeve top"), evidence, buildEventPolicy(evidence));
+  assert.equal(top.formality, 4);
+  assert.equal(top.eligible, false);
+  assert.ok(top.rejectionReasons.includes("above-formality-ceiling"));
+});
+
+test("the rationale does not repeat the complete look", () => {
+  const result = generateGovernedRecommendations({
+    wardrobe: [
+      item("Tops", "Casual cotton short sleeve top"),
+      item("Pants", "Casual cotton twill trousers"),
+      item("Shoes", "Supportive leather sneakers"),
+    ],
+    context: context({ title: "Lunch", notes: "Polished", high: 72 }),
+    optionCount: 1,
+  });
+  assert.ok(result.options.length > 0);
+  assert.ok(!/complete look[^.]*complete look/.test(result.options[0].rationale),
+    `duplicated phrase: ${result.options[0].rationale}`);
 });
 
 test("confirmed incompatible pair is rejected with user provenance", () => {

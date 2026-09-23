@@ -73,7 +73,7 @@ export function buildContextEvidence(input: {
   const { agendaItem } = input;
   const combined = [agendaItem.title, agendaItem.location, input.notes, input.intention].filter(Boolean).join(" ");
   const venueRules = input.venueRules ?? [];
-  const explicitOutdoor = contains(combined, /\b(outdoor|outside|stadium|ballpark|park|garden|patio|terrace|beach|pool)\b/);
+  const explicitOutdoor = contains(combined, /\b(outdoor|outside|stadium|ballpark|park|garden|patio|terrace|beach|pool|cemeter(?:y|ies)|picnic|lawn|grounds|field|farm|vineyard|orchard|trail|amphitheat(?:er|re)|rooftop|courtyard)\b/);
   const explicitIndoor = contains(combined, /\b(indoor|inside|ballroom|museum|office|theatre|theater|classrooms?|auditorium|gymnasium|cafeteria|library|banquet)\b/);
   const verifiedSetting = venueRules.find((rule) => rule.kind === "setting" && (rule.effect === "indoor" || rule.effect === "outdoor"));
   const setting = verifiedSetting?.effect === "outdoor" || verifiedSetting?.effect === "indoor"
@@ -82,6 +82,11 @@ export function buildContextEvidence(input: {
       ? evidence<"indoor" | "outdoor" | "mixed">(explicitOutdoor && explicitIndoor ? "mixed" : explicitOutdoor ? "outdoor" : "indoor", "inferred", "medium", "event language")
       : evidence<"indoor" | "outdoor" | "mixed">(null, "unknown", "low", "not supplied");
 
+  // Ground that is not paved: grass, gravel, turf. Distinct from outdoor, which
+  // includes paved terraces and rooftops where a fine heel is fine.
+  const unpavedGround = contains(combined, /\b(cemeter(?:y|ies)|picnic|park|garden|lawn|grounds|field|farm|vineyard|orchard|trail|beach|festival|tailgate|amphitheat(?:er|re))\b/)
+    ? evidence(true, "inferred", "medium", "venue language")
+    : evidence<boolean>(null, "unknown", "low", "not supplied");
   const userNoBag = contains(combined, /\b(no bag|cannot carry a bag|can't carry a bag|can’t carry a bag|without a bag|bags? (?:are )?(?:not allowed|prohibited))\b/);
   const verifiedBagRule = venueRules.find((rule) => rule.kind === "bag-policy" && ["no-bag", "small-bag-only", "clear-bag-only"].includes(rule.effect));
   const bagAllowed = userNoBag
@@ -220,6 +225,7 @@ export function buildContextEvidence(input: {
     setting,
     walking,
     evening,
+    unpavedGround,
     bagAllowed,
     pocketsRequired,
     weather,

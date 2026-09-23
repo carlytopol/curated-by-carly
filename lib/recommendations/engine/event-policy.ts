@@ -120,6 +120,15 @@ export function auditItemEligibility(
   const schoolCommunity = policy.archetype === "school-community-day";
   // All three conditions must be established. An unknown evening or setting
   // leaves this disarmed rather than assuming the stricter reading.
+  // Coolness is read from the coldest reading we actually have. An absent
+  // forecast leaves this disarmed rather than guessing.
+  const coolReadings = [context.weather.temperature.value, context.weather.feelsLike.value, context.weather.low.value]
+    .filter((value): value is number => value != null);
+  const statedCool = /\b(chilly|cold|crisp|bundle up|jacket weather)\b/.test(
+    [context.agendaItem.title, context.userNotes.value, context.intention.value].filter(Boolean).join(" ").toLowerCase(),
+  );
+  const coolEvening = context.evening.value === true
+    && (statedCool || (coolReadings.length > 0 && Math.min(...coolReadings) <= 62));
   const conservativeEveningIndoor =
     ["school-community-day", "business-meeting", "formal-dinner"].includes(policy.archetype) &&
     context.evening.value === true &&
@@ -256,6 +265,16 @@ export function auditItemEligibility(
       "Cocktail, evening, and overt occasionwear are not eligible for a school or community daytime commitment.",
     );
   }
+  reject(
+    "unpaved-ground-footwear",
+    context.unpavedGround.value === true && traits.role === "shoes" && (traits.walkability ?? 3) <= 1,
+    "Stilettos, platform pumps and other fine heels are not eligible for a venue on grass, gravel or other unpaved ground.",
+  );
+  reject(
+    "cool-evening-bare-legs",
+    coolEvening && traits.role === "bottom" && traits.warmth === 1,
+    "Bare-legged bottoms are not eligible for a cool evening.",
+  );
   reject(
     "evening-indoor-leisurewear",
     conservativeEveningIndoor && traits.leisureCasual && traits.formality != null && traits.formality <= 2,

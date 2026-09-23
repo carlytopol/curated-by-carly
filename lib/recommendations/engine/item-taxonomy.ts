@@ -124,7 +124,7 @@ export function classifyWardrobeTraits(item: EngineWardrobeItem): WardrobeTraits
     typeof evidenceFormality.value === "number"
   ) formality = evidenceFormality.value;
   else if (/\b(black.?tie|gala|formal|gowns?|tuxedo)\b/.test(value)) formality = 5;
-  else if (occasionLaceFoundation || /\b(cocktail|evening|satin|silk|charmeuse|sequined?|beaded|organza|tulle)\b/.test(value)) formality = 4;
+  else if (occasionLaceFoundation || /\b(cocktail|evening|satin|silk|charmeuse|sequined?|beaded|embellished|organza|tulle)\b/.test(value)) formality = 4;
   else if (/\b(blazers?|tailored|dress shirts?|loafers?|pumps?)\b/.test(value)) formality = 3;
   else if (/\b(casual|denim|chambray|jeans?|tees?|tanks?|sneakers?|shorts|utility)\b/.test(value)) formality = 2;
   else if (/\b(active|athletic|sweatshirts?|hoodies?|gym|swim|cover.?ups?|kaftans?)\b/.test(value)) formality = 1;

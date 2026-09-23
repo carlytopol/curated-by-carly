@@ -60,6 +60,7 @@ export type ContextEvidence = {
   setting: EvidenceValue<"indoor" | "outdoor" | "mixed">;
   walking: EvidenceValue<"low" | "moderate" | "high">;
   evening: EvidenceValue<boolean>;
+  unpavedGround: EvidenceValue<boolean>;
   bagAllowed: EvidenceValue<boolean>;
   pocketsRequired: EvidenceValue<boolean>;
   weather: WeatherEvidence;
